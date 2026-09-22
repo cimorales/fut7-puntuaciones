@@ -65,44 +65,33 @@
             { id: 'Neft', name: 'Neft', accent: '#f43f5e' },
         ];
 
-        // JSON INTEGRADO DE PLANTILLA COMPLETA
+        // Plantilla de respaldo con los nombres limpios oficiales
         const INITIAL_PLAYERS = [
-            { id: 1, name: "Carlos Bordas (Charly)", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 2, name: "Carlos Lorente (Zlatan)", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 3, name: "Carlos Morales (Valencia)", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:5, v:5, t:5}, Lino: {r:4, v:4, t:4}, Reta: {r:6, v:6, t:6}, Neft: {r:6, v:6, t:6} } },
+            { id: 1, name: "Charly", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
+            { id: 2, name: "Zlatan", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
+            { id: 3, name: "Valencia", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:5, v:5, t:5}, Lino: {r:4, v:4, t:4}, Reta: {r:6, v:6, t:6}, Neft: {r:6, v:6, t:6} } },
             { id: 4, name: "Tora", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 5, name: "Pablo Megía", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:9, v:9, t:9}, Neft: {r:7, v:7, t:7} } },
+            { id: 5, name: "Pablo", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:9, v:9, t:9}, Neft: {r:7, v:7, t:7} } },
             { id: 6, name: "Mon", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } },
-            { id: 7, name: "Carlos García", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 8, name: "Javi Totti", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:4, v:4, t:4}, Reta: {r:5, v:5, t:5}, Neft: {r:6, v:6, t:6} } },
-            { id: 9, name: "José A. Sánchez (Jass)", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:5, v:5, t:5}, Tora: {r:5, v:5, t:5}, Lino: {r:4, v:4, t:4}, Reta: {r:5, v:5, t:5}, Neft: {r:6, v:6, t:6} } },
-            { id: 10, name: "Neft", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 11, name: "Agustín Alcaide", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 12, name: "Kiko", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:5, v:5, t:5}, Tora: {r:5, v:5, t:5}, Lino: {r:6, v:6, t:6}, Reta: {r:6, v:6, t:6}, Neft: {r:5, v:5, t:5} } },
-            { id: 13, name: "Achraf", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 14, name: "Piñe", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:8, v:8, t:8} } },
-            { id: 15, name: "Reta", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 16, name: "Luis Plaza", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:5, v:5, t:5}, Lino: {r:4, v:4, t:4}, Reta: {r:5, v:5, t:5}, Neft: {r:6, v:6, t:6} } },
-            { id: 17, name: "Omar", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:8, v:8, t:8} } },
-            { id: 18, name: "Javi", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:10, v:10, t:10}, Tora: {r:10, v:10, t:10}, Lino: {r:10, v:10, t:10}, Reta: {r:10, v:10, t:10}, Neft: {r:10, v:10, t:10} } },
-            { id: 19, name: "Ramón (Mexico)", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:6, v:6, t:6}, Neft: {r:6, v:6, t:6} } },
-            { id: 20, name: "Gabi", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 21, name: "Baena", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6.5, v:6.5, t:6.5}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } },
-            { id: 22, name: "Luis Iglesias", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } },
-            { id: 23, name: "Juanjo", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:8, v:8, t:8}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 24, name: "Nacho", pos1: "Medio", pos2: "Medio", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:8, v:8, t:8}, Neft: {r:9, v:9, t:9} } },
-            { id: 25, name: "Miguel", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:10, v:10, t:10}, Neft: {r:9, v:9, t:9} } },
-            { id: 26, name: "Daniel Rojas", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:7, v:7, t:7} } },
-            { id: 27, name: "Ángel", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:3, v:3, t:3}, Tora: {r:3, v:3, t:3}, Lino: {r:3, v:3, t:3}, Reta: {r:4, v:4, t:4}, Neft: {r:5, v:5, t:5} } },
-            { id: 28, name: "Alex", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
-            { id: 29, name: "Javi Valdemoro", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:10, v:10, t:10}, Reta: {r:9, v:9, t:9}, Neft: {r:9, v:9, t:9} } },
-            { id: 30, name: "Sergio (Agus)", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:10, v:10, t:10}, Lino: {r:9, v:9, t:9}, Reta: {r:10, v:10, t:10}, Neft: {r:8, v:8, t:8} } },
-            { id: 31, name: "Sergio A. (Nieva)", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:7, v:7, t:7} } },
-            { id: 32, name: "Javi (Alto)", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:9, v:9, t:9} } },
-            { id: 33, name: "Merino", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:6, v:6, t:6}, Neft: {r:6, v:6, t:6} } },
-            { id: 34, name: "Guillermo", pos1: "Portero", pos2: "Portero", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 35, name: "Jose (Portero)", pos1: "Portero", pos2: "Portero", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
-            { id: 36, name: "Sergio Asencio (Luis)", pos1: "Delantero", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } }
+            { id: 7, name: "Carlos", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
+            { id: 8, name: "Totti", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:4, v:4, t:4}, Reta: {r:5, v:5, t:5}, Neft: {r:6, v:6, t:6} } },
+            { id: 9, name: "Agus", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:8, v:8, t:8}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
+            { id: 10, name: "Achraf", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
+            { id: 11, name: "Piñe", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:8, v:8, t:8} } },
+            { id: 12, name: "Reta", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:8, v:8, t:8}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
+            { id: 13, name: "Luis", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:5, v:5, t:5}, Lino: {r:4, v:4, t:4}, Reta: {r:5, v:5, t:5}, Neft: {r:6, v:6, t:6} } },
+            { id: 14, name: "Omar", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:8, v:8, t:8} } },
+            { id: 15, name: "Ramón", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:6, v:6, t:6}, Neft: {r:6, v:6, t:6} } },
+            { id: 16, name: "Luis I", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:6, v:6, t:6}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } },
+            { id: 17, name: "Jj", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:8, v:8, t:8}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
+            { id: 18, name: "Nacho", pos1: "Medio", pos2: "Medio", scores: { Agus: {r:9, v:9, t:9}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:8, v:8, t:8}, Neft: {r:9, v:9, t:9} } },
+            { id: 19, name: "Miguel", pos1: "Defensa", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:10, v:10, t:10}, Neft: {r:9, v:9, t:9} } },
+            { id: 20, name: "Ángel", pos1: "Defensa", pos2: "Defensa", scores: { Agus: {r:3, v:3, t:3}, Tora: {r:3, v:3, t:3}, Lino: {r:3, v:3, t:3}, Reta: {r:4, v:4, t:4}, Neft: {r:5, v:5, t:5} } },
+            { id: 21, name: "Alex", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
+            { id: 22, name: "Sergio A.", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:7, v:7, t:7} } },
+            { id: 23, name: "Javi alto", pos1: "Delantero", pos2: "Medio", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:9, v:9, t:9}, Lino: {r:9, v:9, t:9}, Reta: {r:9, v:9, t:9}, Neft: {r:9, v:9, t:9} } },
+            { id: 24, name: "Guille", pos1: "Portero", pos2: "Portero", scores: { Agus: {r:8, v:8, t:8}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
+            { id: 25, name: "Asensio", pos1: "Delantero", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } }
         ];
 
         function App() {
@@ -212,48 +201,55 @@
                 };
             };
 
-            // Generador Inteligente con Diccionario robusto para Lunes y Miércoles
+            // Generador Inteligente con Mapeador Infalible para WhatsApp
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
-                const lineas = convocatoriaText.split('\n').map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
+                const lineas = convocatoriaText.split('\n')
+                    .map(l => l.replace(/^\d+[\.\-\)]\s*/, '').trim().toLowerCase())
+                    .filter(l => l.length > 0);
+
                 let convocados = [];
 
                 const mapaNombres = {
+                    'sergio a.': 'sergio a.',
+                    'sergio a': 'sergio a.',
+                    'javi alto': 'javi alto',
+                    'nacho': 'nacho',
+                    'agus': 'agus',
+                    'jj': 'jj',
+                    'miguel': 'miguel',
+                    'luis i': 'luis i',
+                    'luis i.': 'luis i',
+                    'ramón': 'ramón',
+                    'ramon': 'ramón',
+                    'charly': 'charly',
+                    'guille': 'guille',
+                    'alex': 'alex',
                     'reta': 'reta',
-                    'agus': 'agustín alcaide',
+                    'omar': 'omar',
+                    'carlos': 'carlos',
+                    'luis': 'luis',
+                    'piñe': 'piñe',
                     'ángel': 'ángel',
                     'angel': 'ángel',
                     'achraf': 'achraf',
                     'mon': 'mon',
-                    'charly': 'carlos bordas',
-                    'zlatan': 'carlos lorente',
-                    'alex': 'alex',
-                    'omar': 'omar',
+                    'zlatan': 'zlatan',
                     'tora': 'tora',
-                    'totti': 'javi totti',
-                    'pablo': 'pablo megía',
-                    'asensio': 'sergio asencio',
-                    'piñe': 'piñe',
-                    'luis i': 'luis iglesias',
-                    'luis': 'luis plaza',
-                    'valencia': 'carlos morales',
-                    'sergio a': 'sergio a. (nieva)',
-                    'javi alto': 'javi (alto)',
-                    'jj': 'juanjo',
-                    'guille': 'guillermo',
-                    'carlos': 'carlos garcía'
+                    'totti': 'totti',
+                    'pablo': 'pablo',
+                    'asensio': 'asensio',
+                    'valencia': 'valencia'
                 };
 
                 lineas.forEach(linea => {
-                    const textoLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
-                    let claveEncontrada = Object.keys(mapaNombres).find(k => textoLimpio === k || textoLimpio.startsWith(k));
-                    let terminoBusqueda = claveEncontrada ? mapaNombres[claveEncontrada] : textoLimpio;
+                    let nombreOficial = mapaNombres[linea] || linea;
+                    let jugadorEncontrado = players.find(p => p.name.toLowerCase() === nombreOficial);
 
-                    let jugadorEncontrado = players.find(p => {
-                        const pName = p.name.toLowerCase();
-                        return pName.includes(terminoBusqueda);
-                    });
+                    if (!jugadorEncontrado) {
+                        jugadorEncontrado = players.find(p => p.name.toLowerCase().includes(linea));
+                    }
 
                     if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) {
                         convocados.push(jugadorEncontrado);
@@ -261,14 +257,14 @@
                 });
 
                 if (convocados.length < 16) {
-                    alert(`Atención: Se han detectado ${convocados.length} jugadores de 16. Revisa la lista.`);
+                    alert(`Atención: Se han detectado ${convocados.length} jugadores de 16. Revisa los nombres.`);
                 }
 
                 let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
                 let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
                 let achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
 
-                const miembrosMexico = ['ramón', 'luis iglesias', 'juanjo', 'nacho', 'miguel', 'piñe'];
+                const miembrosMexico = ['ramón', 'luis i', 'jj', 'nacho', 'miguel', 'piñe'];
                 let resto = convocados.filter(p => p !== charly);
                 resto.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
 
@@ -281,7 +277,7 @@
                         if (amarillo.includes(achraf)) negro.push(p); else amarillo.push(p);
                     } else if (p === achraf) {
                         if (amarillo.includes(zlatan)) negro.push(p); else amarillo.push(p);
-                    } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower.includes(m))) {
+                    } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower === m || pNameLower.includes(m))) {
                         if (amarillo.length < 8) amarillo.push(p); else negro.push(p);
                     } else {
                         const ptsAmarilloActual = amarillo.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
@@ -566,7 +562,7 @@
             );
         }
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        ReactDOM.createRoot(defaultGetElement = document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
