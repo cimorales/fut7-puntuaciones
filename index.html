@@ -194,7 +194,7 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Función del Generador de Equipos con Restricciones Obligatorias
+            // Función del Generador de Equipos con Restricciones y Búsqueda Inteligente
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) {
                     alert("Por favor, pega la lista de convocados.");
@@ -202,10 +202,20 @@
                 }
 
                 const textoLower = convocatoriaText.toLowerCase();
+                
+                // Búsqueda inteligente para reconocer nombres, apodos y nombres cortos (Mon, Alex, Luis, etc.)
                 let convocados = players.filter(p => {
                     const nameLower = p.name.toLowerCase();
-                    const parts = nameLower.split(' ');
-                    return parts.some(part => part.length > 2 && textoLower.includes(part));
+                    const matches = nameLower.match(/\(([^)]+)\)/);
+                    const apodo = matches ? matches[1] : "";
+                    const primerNombre = nameLower.split(' ')[0];
+
+                    return textoLower.includes(nameLower) || 
+                           (apodo && textoLower.includes(apodo)) || 
+                           textoLower.includes(primerNombre) ||
+                           (nameLower.includes("luis") && textoLower.includes("luis")) ||
+                           (nameLower.includes("mon") && textoLower.includes("mon")) ||
+                           (nameLower.includes("alex") && textoLower.includes("alex"));
                 });
 
                 if (convocados.length < 16) {
