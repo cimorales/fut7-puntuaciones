@@ -102,8 +102,8 @@
             const [diaPartido, setDiaPartido] = useState('Lunes');
             const [convocatoriaText, setConvocatoriaText] = useState('');
             const [equiposResult, setEquiposResult] = useState(null);
+            const [copiadoStatus, setCopiadoStatus] = useState(false);
 
-            // Cargar datos guardados previamente desde Supabase al abrir la web
             useEffect(() => {
                 async function loadDataFromCloud() {
                     try {
@@ -123,7 +123,6 @@
                 loadDataFromCloud();
             }, []);
 
-            // Guardar cambios automáticamente en Supabase
             const saveToCloud = async (newPlayersData) => {
                 setSavingStatus('Guardando...');
                 try {
@@ -194,7 +193,7 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Función del Generador de Equipos con Búsqueda Inteligente y Restricciones
+            // Generador de Equipos con Restricciones
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) {
                     alert("Por favor, pega la lista de convocados.");
@@ -206,7 +205,6 @@
 
                 lineas.forEach(linea => {
                     const nombreLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
-                    
                     let jugadorEncontrado = players.find(p => {
                         const pName = p.name.toLowerCase();
                         const matches = pName.match(/\(([^)]+)\)/);
@@ -227,7 +225,6 @@
                     alert(`Atención: Se han detectado ${convocados.length} jugadores. Revisa los nombres de la lista.`);
                 }
 
-                // Restricciones fijas
                 let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
                 let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
                 let achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
@@ -269,6 +266,31 @@
                 const ptsNegro = negro.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
 
                 setEquiposResult({ amarillo, negro, ptsAmarillo, ptsNegro });
+                setCopiadoStatus(false);
+            };
+
+            // Copiar Prompt para Nano Banana / IA de Imagen 3D
+            const copiarPromptImagen = () => {
+                if (!equiposResult) return;
+
+                const promptText = `A high-end, hyper-realistic 3D broadcast graphics banner for a 7-a-side football match in a dark futuristic stadium. 
+Top Header: On the left, a dark metallic geometric card with cyan neon edges labeled "EQUIPO NEGRO - PUNTOS: ${equiposResult.ptsNegro}". On the right, a gold metallic geometric card labeled "EQUIPO AMARILLO - PUNTOS: ${equiposResult.ptsAmarillo}". In the center top: "${diaPartido.toUpperCase()} - CAMPO 2 PERALES".
+Center Field: A vibrant 3D isometric green grass pitch with realistic stadium lighting, white chalk lines, and a center line.
+Left Side (Equipo Negro - 1-2-4-1 Formation): 8 dark metallic player cards placed on the pitch (NO individual ratings, only name and position):
+- Goalkeeper: "${equiposResult.negro[0]?.name || ''}"
+- Defenders: "${equiposResult.negro[1]?.name || ''}", "${equiposResult.negro[2]?.name || ''}"
+- Midfielders: "${equiposResult.negro[3]?.name || ''}", "${equiposResult.negro[4]?.name || ''}", "${equiposResult.negro[5]?.name || ''}", "${equiposResult.negro[6]?.name || ''}"
+- Forward: "${equiposResult.negro[7]?.name || ''}"
+Right Side (Equipo Amarillo - 1-2-4-1 Formation): 8 gold metallic player cards placed on the pitch (NO individual ratings, only name and position):
+- Goalkeeper: "${equiposResult.amarillo[0]?.name || ''}"
+- Defenders: "${equiposResult.amarillo[1]?.name || ''}", "${equiposResult.amarillo[2]?.name || ''}"
+- Midfielders: "${equiposResult.amarillo[3]?.name || ''}", "${equiposResult.amarillo[4]?.name || ''}", "${equiposResult.amarillo[5]?.name || ''}", "${equiposResult.amarillo[6]?.name || ''}"
+- Forward: "${equiposResult.amarillo[7]?.name || ''}"
+Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution, cinematic lighting, sleek UI cards with clean text, no individual player scores shown.`;
+
+                navigator.clipboard.writeText(promptText);
+                setCopiadoStatus(true);
+                setTimeout(() => setCopiadoStatus(false), 3000);
             };
 
             return (
@@ -289,7 +311,6 @@
                                 <p className="text-xs text-slate-400 font-medium">Panel React sincronizado en la nube con Supabase</p>
                             </div>
 
-                            {/* Pestañas Principales */}
                             <div className="flex gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full md:w-auto">
                                 <button 
                                     onClick={() => setActiveTab('scouting')}
@@ -339,7 +360,6 @@
                                     </div>
                                 </div>
 
-                                {/* Tabla Principal */}
                                 <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                                     <div className="grid grid-cols-12 gap-2 p-4 bg-slate-950/80 border-b border-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider text-center items-center">
                                         <div className="col-span-4 text-left pl-2">Jugador & Demarcaciones</div>
@@ -411,7 +431,6 @@
                                                         </div>
                                                     </div>
 
-                                                    {/* Desglose Desplegable al hacer clic en el Juez */}
                                                     {activeJudge && (
                                                         <div className="px-6 py-4 bg-slate-950/70 border-t border-slate-800/80">
                                                             <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl relative">
@@ -519,42 +538,59 @@
                                     </button>
                                 </div>
 
-                                {/* Resultados de Equipos */}
+                                {/* Resultados de Equipos y Botón para la Imagen 3D */}
                                 {equiposResult && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Equipo Negro */}
-                                        <div className="bg-slate-900 border-t-4 border-t-sky-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
-                                            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                                                <h3 className="font-black text-slate-100 tracking-wide text-lg">EQUIPO NEGRO</h3>
-                                                <span className="px-3 py-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 font-black rounded-xl text-xs">
-                                                    PUNTOS: {equiposResult.ptsNegro}
-                                                </span>
+                                    <div className="space-y-4">
+                                        {/* Botón para copiar el prompt de la imagen 3D HD */}
+                                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                                            <div>
+                                                <h4 className="font-bold text-sm text-slate-200">🖼️ Generar Imagen 3D del Partido</h4>
+                                                <p className="text-xs text-slate-400">Copia el prompt formateado con los nombres exactos para la retransmisión 3D sin medias.</p>
                                             </div>
-                                            <div className="space-y-2">
-                                                {equiposResult.negro.map(p => (
-                                                    <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                                                        <span className="font-bold text-sm text-slate-200">{p.name}</span>
-                                                        <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <button 
+                                                onClick={copiarPromptImagen}
+                                                className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                                            >
+                                                <i className="fa-solid fa-copy"></i>
+                                                {copiadoStatus ? '¡Prompt Copiado al Portapapeles!' : 'Copiar Prompt para Imagen 3D'}
+                                            </button>
                                         </div>
 
-                                        {/* Equipo Amarillo */}
-                                        <div className="bg-slate-900 border-t-4 border-t-amber-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
-                                            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                                                <h3 className="font-black text-amber-400 tracking-wide text-lg">EQUIPO AMARILLO</h3>
-                                                <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black rounded-xl text-xs">
-                                                    PUNTOS: {equiposResult.ptsAmarillo}
-                                                </span>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Equipo Negro */}
+                                            <div className="bg-slate-900 border-t-4 border-t-sky-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
+                                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                                                    <h3 className="font-black text-slate-100 tracking-wide text-lg">EQUIPO NEGRO</h3>
+                                                    <span className="px-3 py-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 font-black rounded-xl text-xs">
+                                                        PUNTOS: {equiposResult.ptsNegro}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {equiposResult.negro.map(p => (
+                                                        <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
+                                                            <span className="font-bold text-sm text-slate-200">{p.name}</span>
+                                                            <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                {equiposResult.amarillo.map(p => (
-                                                    <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                                                        <span className="font-bold text-sm text-slate-200">{p.name}</span>
-                                                        <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
-                                                    </div>
-                                                ))}
+
+                                            {/* Equipo Amarillo */}
+                                            <div className="bg-slate-900 border-t-4 border-t-amber-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
+                                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                                                    <h3 className="font-black text-amber-400 tracking-wide text-lg">EQUIPO AMARILLO</h3>
+                                                    <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black rounded-xl text-xs">
+                                                        PUNTOS: {equiposResult.ptsAmarillo}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {equiposResult.amarillo.map(p => (
+                                                        <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
+                                                            <span className="font-bold text-sm text-slate-200">{p.name}</span>
+                                                            <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
