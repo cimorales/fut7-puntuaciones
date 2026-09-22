@@ -19,10 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script>
-        // Configuración de tu cliente Supabase en la nube
         const SUPABASE_URL = "https://vwnpmdstzqjdybxvxhvs.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_SVMtK51bFQgPMBrWEJQgBg_vsqvQgHb";
-        
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
@@ -31,6 +29,23 @@
             font-family: 'Inter', sans-serif;
             background-color: #020617;
             color: #f8fafc;
+        }
+        /* Estilo del campo de fútbol virtual */
+        .football-pitch {
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+        }
+        .pitch-lines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 10% 10%;
         }
     </style>
 </head>
@@ -98,27 +113,16 @@
             const [sortByRank, setSortByRank] = useState(false);
             const [savingStatus, setSavingStatus] = useState('');
 
-            // Estados del Generador de Equipos
             const [diaPartido, setDiaPartido] = useState('Lunes');
             const [convocatoriaText, setConvocatoriaText] = useState('');
             const [equiposResult, setEquiposResult] = useState(null);
-            const [copiadoStatus, setCopiadoStatus] = useState(false);
 
             useEffect(() => {
                 async function loadDataFromCloud() {
                     try {
-                        const { data, error } = await supabaseClient
-                            .from('jugadores')
-                            .select('datos')
-                            .eq('id', 1)
-                            .single();
-
-                        if (data && data.datos) {
-                            setPlayers(data.datos);
-                        }
-                    } catch (e) {
-                        console.log("Cargando plantilla inicial por defecto...");
-                    }
+                        const { data } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
+                        if (data && data.datos) setPlayers(data.datos);
+                    } catch (e) { console.log("Cargando plantilla inicial..."); }
                 }
                 loadDataFromCloud();
             }, []);
@@ -126,33 +130,19 @@
             const saveToCloud = async (newPlayersData) => {
                 setSavingStatus('Guardando...');
                 try {
-                    const { error } = await supabaseClient
-                        .from('jugadores')
-                        .upsert({ id: 1, datos: newPlayersData });
-
+                    const { error } = await supabaseClient.from('jugadores').upsert({ id: 1, datos: newPlayersData });
                     if (!error) {
                         setSavingStatus('¡Guardado!');
                         setTimeout(() => setSavingStatus(''), 2000);
-                    } else {
-                        setSavingStatus('Error al guardar');
-                    }
-                } catch (e) {
-                    setSavingStatus('Error al guardar');
-                }
+                    } else { setSavingStatus('Error al guardar'); }
+                } catch (e) { setSavingStatus('Error al guardar'); }
             };
 
             const calcJudgeAvg = (s) => (s ? (s.r + s.v + s.t) / 3 : 6);
-
-            const calcGlobalAvg = (scores) => {
-                const sum = JUDGES.reduce((acc, j) => acc + calcJudgeAvg(scores[j.id]), 0);
-                return sum / JUDGES.length;
-            };
+            const calcGlobalAvg = (scores) => JUDGES.reduce((acc, j) => acc + calcJudgeAvg(scores[j.id]), 0) / JUDGES.length;
 
             const toggleJudge = (pId, jId) => {
-                setActiveJudgeMap(prev => ({
-                    ...prev,
-                    [pId]: prev[pId] === jId ? null : jId
-                }));
+                setActiveJudgeMap(prev => ({ ...prev, [pId]: prev[pId] === jId ? null : jId }));
             };
 
             const handleScoreChange = (pId, jId, attr, value) => {
@@ -160,13 +150,7 @@
                 setPlayers(prev => {
                     const updated = prev.map(p => {
                         if (p.id !== pId) return p;
-                        return {
-                            ...p,
-                            scores: {
-                                ...p.scores,
-                                [jId]: { ...p.scores[jId], [attr]: val }
-                            }
-                        };
+                        return { ...p, scores: { ...p.scores, [jId]: { ...p.scores[jId], [attr]: val } } };
                     });
                     saveToCloud(updated);
                     return updated;
@@ -187,18 +171,13 @@
                     p.pos1.toLowerCase().includes(search.toLowerCase()) ||
                     p.pos2.toLowerCase().includes(search.toLowerCase())
                 );
-                if (sortByRank) {
-                    list.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
-                }
+                if (sortByRank) list.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
                 return list;
             }, [players, search, sortByRank]);
 
-            // Generador de Equipos con Restricciones
+            // Generador con Restricciones
             const generarEquipos = () => {
-                if (!convocatoriaText.trim()) {
-                    alert("Por favor, pega la lista de convocados.");
-                    return;
-                }
+                if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
                 const lineas = convocatoriaText.split('\n').map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
                 let convocados = [];
@@ -209,21 +188,12 @@
                         const pName = p.name.toLowerCase();
                         const matches = pName.match(/\(([^)]+)\)/);
                         const apodo = matches ? matches[1].toLowerCase() : "";
-                        
-                        return pName === nombreLimpio || 
-                               (apodo && apodo === nombreLimpio) ||
-                               pName.includes(nombreLimpio) ||
-                               nombreLimpio.split(' ').some(word => word.length > 2 && pName.includes(word));
+                        return pName === nombreLimpio || (apodo && apodo === nombreLimpio) || pName.includes(nombreLimpio) || nombreLimpio.split(' ').some(word => word.length > 2 && pName.includes(word));
                     });
-
-                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) {
-                        convocados.push(jugadorEncontrado);
-                    }
+                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) convocados.push(jugadorEncontrado);
                 });
 
-                if (convocados.length < 16) {
-                    alert(`Atención: Se han detectado ${convocados.length} jugadores. Revisa los nombres de la lista.`);
-                }
+                if (convocados.length < 16) { alert(`Atención: Se han detectado ${convocados.length} jugadores.`); }
 
                 let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
                 let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
@@ -238,27 +208,18 @@
 
                 resto.forEach(p => {
                     const pNameLower = p.name.toLowerCase();
-                    
                     if (p === zlatan) {
-                        if (amarillo.includes(achraf)) negro.push(p);
-                        else amarillo.push(p);
+                        if (amarillo.includes(achraf)) negro.push(p); else amarillo.push(p);
                     } else if (p === achraf) {
-                        if (amarillo.includes(zlatan)) negro.push(p);
-                        else negro.push(p);
+                        if (amarillo.includes(zlatan)) negro.push(p); else amarillo.push(p);
                     } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower.includes(m))) {
-                        if (amarillo.length < 8) amarillo.push(p);
-                        else negro.push(p);
+                        if (amarillo.length < 8) amarillo.push(p); else negro.push(p);
                     } else {
-                        const ptsAmarilloActual = amarillo.reduce((acc, current) => acc + calcGlobalAvg(current.scores), 0);
-                        const ptsNegroActual = negro.reduce((acc, current) => acc + calcGlobalAvg(current.scores), 0);
-
-                        if (amarillo.length < 8 && (ptsAmarilloActual <= ptsNegroActual || negro.length >= 8)) {
-                            amarillo.push(p);
-                        } else if (negro.length < 8) {
-                            negro.push(p);
-                        } else {
-                            amarillo.push(p);
-                        }
+                        const ptsAmarilloActual = amarillo.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
+                        const ptsNegroActual = negro.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
+                        if (amarillo.length < 8 && (ptsAmarilloActual <= ptsNegroActual || negro.length >= 8)) amarillo.push(p);
+                        else if (negro.length < 8) negro.push(p);
+                        else amarillo.push(p);
                     }
                 });
 
@@ -266,107 +227,57 @@
                 const ptsNegro = negro.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
 
                 setEquiposResult({ amarillo, negro, ptsAmarillo, ptsNegro });
-                setCopiadoStatus(false);
-            };
-
-            // Copiar Prompt para Nano Banana / IA de Imagen 3D
-            const copiarPromptImagen = () => {
-                if (!equiposResult) return;
-
-                const promptText = `A high-end, hyper-realistic 3D broadcast graphics banner for a 7-a-side football match in a dark futuristic stadium. 
-Top Header: On the left, a dark metallic geometric card with cyan neon edges labeled "EQUIPO NEGRO - PUNTOS: ${equiposResult.ptsNegro}". On the right, a gold metallic geometric card labeled "EQUIPO AMARILLO - PUNTOS: ${equiposResult.ptsAmarillo}". In the center top: "${diaPartido.toUpperCase()} - CAMPO 2 PERALES".
-Center Field: A vibrant 3D isometric green grass pitch with realistic stadium lighting, white chalk lines, and a center line.
-Left Side (Equipo Negro - 1-2-4-1 Formation): 8 dark metallic player cards placed on the pitch (NO individual ratings, only name and position):
-- Goalkeeper: "${equiposResult.negro[0]?.name || ''}"
-- Defenders: "${equiposResult.negro[1]?.name || ''}", "${equiposResult.negro[2]?.name || ''}"
-- Midfielders: "${equiposResult.negro[3]?.name || ''}", "${equiposResult.negro[4]?.name || ''}", "${equiposResult.negro[5]?.name || ''}", "${equiposResult.negro[6]?.name || ''}"
-- Forward: "${equiposResult.negro[7]?.name || ''}"
-Right Side (Equipo Amarillo - 1-2-4-1 Formation): 8 gold metallic player cards placed on the pitch (NO individual ratings, only name and position):
-- Goalkeeper: "${equiposResult.amarillo[0]?.name || ''}"
-- Defenders: "${equiposResult.amarillo[1]?.name || ''}", "${equiposResult.amarillo[2]?.name || ''}"
-- Midfielders: "${equiposResult.amarillo[3]?.name || ''}", "${equiposResult.amarillo[4]?.name || ''}", "${equiposResult.amarillo[5]?.name || ''}", "${equiposResult.amarillo[6]?.name || ''}"
-- Forward: "${equiposResult.amarillo[7]?.name || ''}"
-Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution, cinematic lighting, sleek UI cards with clean text, no individual player scores shown.`;
-
-                navigator.clipboard.writeText(promptText);
-                setCopiadoStatus(true);
-                setTimeout(() => setCopiadoStatus(false), 3000);
             };
 
             return (
                 <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
                     <div className="max-w-6xl mx-auto">
                         
-                        {/* Header Pro */}
                         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-2xl backdrop-blur-xl">
                             <div>
                                 <div className="flex items-center gap-3 mb-1">
-                                    <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20">
+                                    <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl shadow-lg">
                                         <i className="fa-solid fa-trophy text-white text-xl"></i>
                                     </div>
                                     <h1 className="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
                                         Fut7 Scouting Pro
                                     </h1>
                                 </div>
-                                <p className="text-xs text-slate-400 font-medium">Panel React sincronizado en la nube con Supabase</p>
+                                <p className="text-xs text-slate-400 font-medium">Panel React sincronizado con Supabase</p>
                             </div>
 
                             <div className="flex gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full md:w-auto">
-                                <button 
-                                    onClick={() => setActiveTab('scouting')}
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'scouting' ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' : 'text-slate-400 hover:text-slate-200'}`}
-                                >
-                                    <i className="fa-solid fa-users-viewfinder mr-2"></i>
-                                    Scouting & Valoraciones
+                                <button onClick={() => setActiveTab('scouting')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'scouting' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>
+                                    <i className="fa-solid fa-users-viewfinder mr-2"></i>Scouting & Valoraciones
                                 </button>
-                                <button 
-                                    onClick={() => setActiveTab('generador')}
-                                    className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'generador' ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' : 'text-slate-400 hover:text-slate-200'}`}
-                                >
-                                    <i className="fa-solid fa-diagram-project mr-2"></i>
-                                    Generar Equipos
+                                <button onClick={() => setActiveTab('generador')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'generador' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>
+                                    <i className="fa-solid fa-diagram-project mr-2"></i>Generar Equipos
                                 </button>
                             </div>
                         </header>
 
-                        {/* CONTENIDO PESTAÑA 1: SCOUTING */}
+                        {/* PESTAÑA 1: SCOUTING */}
                         {activeTab === 'scouting' && (
                             <>
                                 <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
                                     <div className="relative w-full md:w-80">
                                         <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                                        <input 
-                                            type="text" 
-                                            placeholder="Buscar jugador o posición..."
-                                            value={search}
-                                            onChange={e => setSearch(e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all text-slate-200 placeholder:text-slate-500"
-                                        />
+                                        <input type="text" placeholder="Buscar jugador..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200" />
                                     </div>
-
                                     <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                                        {savingStatus && (
-                                            <span className="text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold animate-pulse">
-                                                {savingStatus}
-                                            </span>
-                                        )}
-                                        <button 
-                                            onClick={() => setSortByRank(!sortByRank)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${sortByRank ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'}`}
-                                        >
-                                            <i className="fa-solid fa-sort"></i>
-                                            {sortByRank ? 'Ranking Activo' : 'Ordenar por Top'}
+                                        {savingStatus && <span className="text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 font-bold">{savingStatus}</span>}
+                                        <button onClick={() => setSortByRank(!sortByRank)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${sortByRank ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-300'}`}>
+                                            <i className="fa-solid fa-sort mr-1"></i>{sortByRank ? 'Ranking Activo' : 'Ordenar por Top'}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                                    <div className="grid grid-cols-12 gap-2 p-4 bg-slate-950/80 border-b border-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider text-center items-center">
+                                    <div className="grid grid-cols-12 gap-2 p-4 bg-slate-950/80 border-b border-slate-800 text-xs font-bold text-slate-400 uppercase text-center items-center">
                                         <div className="col-span-4 text-left pl-2">Jugador & Demarcaciones</div>
                                         {JUDGES.map(j => (
                                             <div key={j.id} className="col-span-1 flex items-center justify-center gap-1.5">
-                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: j.accent }}></span>
-                                                <span>{j.name}</span>
+                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: j.accent }}></span><span>{j.name}</span>
                                             </div>
                                         ))}
                                         <div className="col-span-3 text-right pr-2">Media Global</div>
@@ -376,27 +287,16 @@ Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution,
                                         {filteredPlayers.map(player => {
                                             const activeJudge = activeJudgeMap[player.id];
                                             const globalAvg = calcGlobalAvg(player.scores).toFixed(1);
-
                                             return (
                                                 <div key={player.id} className="hover:bg-slate-800/30 transition-colors">
                                                     <div className="grid grid-cols-12 gap-2 p-4 items-center text-center">
                                                         <div className="col-span-4 text-left pl-2 flex flex-col gap-1.5">
-                                                            <span className="font-bold text-slate-100 text-sm tracking-wide">
-                                                                {player.name}
-                                                            </span>
+                                                            <span className="font-bold text-slate-100 text-sm">{player.name}</span>
                                                             <div className="flex gap-2">
-                                                                <select 
-                                                                    value={player.pos1} 
-                                                                    onChange={e => handlePosChange(player.id, 'pos1', e.target.value)}
-                                                                    className="bg-slate-800 text-xs font-semibold text-slate-300 px-2 py-0.5 rounded-md border border-slate-700 outline-none cursor-pointer"
-                                                                >
+                                                                <select value={player.pos1} onChange={e => handlePosChange(player.id, 'pos1', e.target.value)} className="bg-slate-800 text-xs text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
                                                                     {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
                                                                 </select>
-                                                                <select 
-                                                                    value={player.pos2} 
-                                                                    onChange={e => handlePosChange(player.id, 'pos2', e.target.value)}
-                                                                    className="bg-slate-800 text-xs font-semibold text-slate-300 px-2 py-0.5 rounded-md border border-slate-700 outline-none cursor-pointer"
-                                                                >
+                                                                <select value={player.pos2} onChange={e => handlePosChange(player.id, 'pos2', e.target.value)} className="bg-slate-800 text-xs text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
                                                                     {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
                                                                 </select>
                                                             </div>
@@ -405,18 +305,9 @@ Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution,
                                                         {JUDGES.map(j => {
                                                             const avg = calcJudgeAvg(player.scores[j.id]).toFixed(1);
                                                             const isActive = activeJudge === j.id;
-
                                                             return (
                                                                 <div key={j.id} className="col-span-1 flex justify-center">
-                                                                    <button 
-                                                                        onClick={() => toggleJudge(player.id, j.id)}
-                                                                        className={`w-11 h-10 rounded-xl font-bold text-sm flex items-center justify-center border transition-all duration-200 ${isActive ? 'scale-110 shadow-lg border-white/50 ring-2 ring-white/20' : 'hover:scale-105 border-slate-800 bg-slate-800/40'}`}
-                                                                        style={{ 
-                                                                            color: j.accent,
-                                                                            backgroundColor: isActive ? `${j.accent}25` : undefined,
-                                                                            borderColor: isActive ? j.accent : undefined
-                                                                        }}
-                                                                    >
+                                                                    <button onClick={() => toggleJudge(player.id, j.id)} className={`w-11 h-10 rounded-xl font-bold text-sm flex items-center justify-center border transition-all ${isActive ? 'scale-110 border-white/50 ring-2 ring-white/20' : 'border-slate-800 bg-slate-800/40'}`} style={{ color: j.accent, backgroundColor: isActive ? `${j.accent}25` : undefined, borderColor: isActive ? j.accent : undefined }}>
                                                                         {avg}
                                                                     </button>
                                                                 </div>
@@ -424,66 +315,27 @@ Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution,
                                                         })}
 
                                                         <div className="col-span-3 text-right pr-2">
-                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold text-sm shadow-md shadow-blue-500/20">
-                                                                <i className="fa-solid fa-fire text-amber-300"></i>
-                                                                {globalAvg}
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold text-sm shadow-md">
+                                                                <i className="fa-solid fa-fire text-amber-300"></i>{globalAvg}
                                                             </span>
                                                         </div>
                                                     </div>
 
                                                     {activeJudge && (
-                                                        <div className="px-6 py-4 bg-slate-950/70 border-t border-slate-800/80">
-                                                            <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl relative">
+                                                        <div className="px-6 py-4 bg-slate-950/70 border-t border-slate-800">
+                                                            <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
                                                                 <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: JUDGES.find(j => j.id === activeJudge)?.accent }}></span>
-                                                                        <span className="font-bold text-sm text-slate-200">Evaluación: {activeJudge}</span>
-                                                                    </div>
-                                                                    <button 
-                                                                        onClick={() => toggleJudge(player.id, activeJudge)}
-                                                                        className="text-slate-500 hover:text-slate-300"
-                                                                    >
-                                                                        <i className="fa-solid fa-xmark"></i>
-                                                                    </button>
+                                                                    <span className="font-bold text-sm text-slate-200">Evaluación: {activeJudge}</span>
+                                                                    <button onClick={() => toggleJudge(player.id, activeJudge)} className="text-slate-500 hover:text-slate-300"><i className="fa-solid fa-xmark"></i></button>
                                                                 </div>
-
                                                                 <div className="space-y-3">
-                                                                    {[
-                                                                        { key: 'r', label: 'Resistencia', icon: 'fa-heart-pulse' },
-                                                                        { key: 'v', label: 'Velocidad', icon: 'fa-gauge-high' },
-                                                                        { key: 't', label: 'Técnica', icon: 'fa-bullseye' },
-                                                                    ].map(attr => {
-                                                                        const val = player.scores[activeJudge][attr.key];
-
-                                                                        return (
-                                                                            <div key={attr.key} className="flex items-center justify-between text-xs">
-                                                                                <div className="flex items-center gap-2 text-slate-400 font-medium w-28">
-                                                                                    <i className={`fa-solid ${attr.icon} text-blue-400`}></i>
-                                                                                    <span>{attr.label}</span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-3 flex-1 px-3">
-                                                                                    <input 
-                                                                                        type="range" 
-                                                                                        min="0" 
-                                                                                        max="10" 
-                                                                                        step="0.5" 
-                                                                                        value={val}
-                                                                                        onChange={e => handleScoreChange(player.id, activeJudge, attr.key, e.target.value)}
-                                                                                        className="w-full accent-blue-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
-                                                                                    />
-                                                                                </div>
-                                                                                <input 
-                                                                                    type="number" 
-                                                                                    min="0" 
-                                                                                    max="10" 
-                                                                                    step="0.5" 
-                                                                                    value={val}
-                                                                                    onChange={e => handleScoreChange(player.id, activeJudge, attr.key, e.target.value)}
-                                                                                    className="w-12 text-center bg-slate-800 border border-slate-700 rounded-md py-1 text-slate-100 font-bold outline-none focus:border-blue-500"
-                                                                                />
-                                                                            </div>
-                                                                        );
-                                                                    })}
+                                                                    {[{ key: 'r', label: 'Resistencia' }, { key: 'v', label: 'Velocidad' }, { key: 't', label: 'Técnica' }].map(attr => (
+                                                                        <div key={attr.key} className="flex items-center justify-between text-xs">
+                                                                            <span className="text-slate-400 font-medium w-28">{attr.label}</span>
+                                                                            <input type="range" min="0" max="10" step="0.5" value={player.scores[activeJudge][attr.key]} onChange={e => handleScoreChange(player.id, activeJudge, attr.key, e.target.value)} className="w-full mx-3 accent-blue-500 bg-slate-800 h-1.5" />
+                                                                            <input type="number" min="0" max="10" step="0.5" value={player.scores[activeJudge][attr.key]} onChange={e => handleScoreChange(player.id, activeJudge, attr.key, e.target.value)} className="w-12 text-center bg-slate-800 border border-slate-700 rounded-md py-1 font-bold text-slate-100" />
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -496,100 +348,141 @@ Style: EA Sports FC 24 tactical layout, ultra-detailed 3D render, 8k resolution,
                             </>
                         )}
 
-                        {/* CONTENIDO PESTAÑA 2: GENERADOR DE EQUIPOS */}
+                        {/* PESTAÑA 2: GENERADOR DE EQUIPOS CON CAMPO DE FÚTBOL DINÁMICO */}
                         {activeTab === 'generador' && (
                             <div className="space-y-6">
                                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
                                     <h2 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-list-check"></i>
-                                        Convocatoria del Día (16 Jugadores)
+                                        <i className="fa-solid fa-list-check"></i>Convocatoria del Día (16 Jugadores)
                                     </h2>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        <div className="col-span-1">
+                                        <div>
                                             <label className="block text-xs font-bold text-slate-400 mb-2">Día del partido:</label>
-                                            <select 
-                                                value={diaPartido}
-                                                onChange={e => setDiaPartido(e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm font-semibold text-slate-200 outline-none focus:border-amber-500"
-                                            >
+                                            <select value={diaPartido} onChange={e => setDiaPartido(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm font-semibold text-slate-200">
                                                 <option value="Lunes">Lunes</option>
                                                 <option value="Miercoles">Miércoles (Priorizar Grupo México)</option>
                                             </select>
                                         </div>
-
                                         <div className="col-span-2">
                                             <label className="block text-xs font-bold text-slate-400 mb-2">Pega la lista de WhatsApp:</label>
-                                            <textarea 
-                                                rows="5"
-                                                value={convocatoriaText}
-                                                onChange={e => setConvocatoriaText(e.target.value)}
-                                                placeholder="1. Reta&#10;2. Agus&#10;3. Ángel..."
-                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-amber-500 font-mono"
-                                            ></textarea>
+                                            <textarea rows="4" value={convocatoriaText} onChange={e => setConvocatoriaText(e.target.value)} placeholder="1. Reta&#10;2. Agus&#10;3. Ángel..." className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 font-mono"></textarea>
                                         </div>
                                     </div>
 
-                                    <button 
-                                        onClick={generarEquipos}
-                                        className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all text-sm uppercase tracking-wider"
-                                    >
-                                        🚀 Calcular y Repartir Equipos
+                                    <button onClick={generarEquipos} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 uppercase tracking-wider text-sm">
+                                        🚀 Calcular y Generar Alineación en el Campo
                                     </button>
                                 </div>
 
-                                {/* Resultados de Equipos y Botón para la Imagen 3D */}
+                                {/* RESULTADO: CAMPO DE FÚTBOL TÁCTICO 3D / 2D DINÁMICO */}
                                 {equiposResult && (
-                                    <div className="space-y-4">
-                                        {/* Botón para copiar el prompt de la imagen 3D HD */}
-                                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                                            <div>
-                                                <h4 className="font-bold text-sm text-slate-200">🖼️ Generar Imagen 3D del Partido</h4>
-                                                <p className="text-xs text-slate-400">Copia el prompt formateado con los nombres exactos para la retransmisión 3D sin medias.</p>
+                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+                                        {/* Marcador Superior Estilo TV */}
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6 items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
+                                            <div className="bg-slate-900 p-3 rounded-lg border-l-4 border-sky-400 text-center">
+                                                <div className="text-xs font-bold text-slate-400">EQUIPO NEGRO</div>
+                                                <div className="text-lg font-black text-sky-400">PUNTOS: {equiposResult.ptsNegro}</div>
                                             </div>
-                                            <button 
-                                                onClick={copiarPromptImagen}
-                                                className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
-                                            >
-                                                <i className="fa-solid fa-copy"></i>
-                                                {copiadoStatus ? '¡Prompt Copiado al Portapapeles!' : 'Copiar Prompt para Imagen 3D'}
-                                            </button>
+                                            <div className="text-center hidden md:block">
+                                                <div className="text-xs font-bold text-amber-400 uppercase">{diaPartido} - CAMPO 2 PERALES</div>
+                                                <div className="text-xs text-slate-500">FORMACIÓN 1-2-4-1</div>
+                                            </div>
+                                            <div className="bg-slate-900 p-3 rounded-lg border-l-4 border-amber-400 text-center">
+                                                <div className="text-xs font-bold text-slate-400">EQUIPO AMARILLO</div>
+                                                <div className="text-lg font-black text-amber-400">PUNTOS: {equiposResult.ptsAmarillo}</div>
+                                            </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {/* Equipo Negro */}
-                                            <div className="bg-slate-900 border-t-4 border-t-sky-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
-                                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                                                    <h3 className="font-black text-slate-100 tracking-wide text-lg">EQUIPO NEGRO</h3>
-                                                    <span className="px-3 py-1 bg-sky-500/10 border border-sky-500/30 text-sky-400 font-black rounded-xl text-xs">
-                                                        PUNTOS: {equiposResult.ptsNegro}
-                                                    </span>
+                                        {/* CAMPO DE FÚTBOL VISUAL CON JUGADORES */}
+                                        <div className="football-pitch rounded-2xl p-6 min-h-[550px] flex flex-col justify-between">
+                                            <div className="pitch-lines"></div>
+
+                                            {/* EQUIPO NEGRO (IZQUIERDA) */}
+                                            <div className="relative z-10">
+                                                <div className="text-xs font-black text-sky-300 uppercase mb-2 tracking-widest text-center md:text-left">▶ Ataque Equipo Negro (1-2-4-1)</div>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                                    {/* Portero y Defensas */}
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[0]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[1]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[2]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[3]?.name}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    {equiposResult.negro.map(p => (
-                                                        <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                                                            <span className="font-bold text-sm text-slate-200">{p.name}</span>
-                                                            <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
-                                                        </div>
-                                                    ))}
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[4]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[5]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[6]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg bg-sky-950/80">
+                                                        <div className="text-[10px] text-sky-300 font-bold">DELANTERO</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[7]?.name}</div>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* Equipo Amarillo */}
-                                            <div className="bg-slate-900 border-t-4 border-t-amber-400 border-x border-b border-slate-800 rounded-2xl p-6 shadow-xl">
-                                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                                                    <h3 className="font-black text-amber-400 tracking-wide text-lg">EQUIPO AMARILLO</h3>
-                                                    <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black rounded-xl text-xs">
-                                                        PUNTOS: {equiposResult.ptsAmarillo}
-                                                    </span>
+                                            {/* LÍNEA DE MEDIO CAMPO DIVISORIA */}
+                                            <div className="my-4 border-t-2 border-white/30 relative">
+                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white/30 rounded-full"></div>
+                                            </div>
+
+                                            {/* EQUIPO AMARILLO (DERECHA) */}
+                                            <div className="relative z-10">
+                                                <div className="text-xs font-black text-amber-300 uppercase mb-2 tracking-widest text-center md:text-left">◀ Ataque Equipo Amarillo (1-2-4-1)</div>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[0]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[1]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[2]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[3]?.name}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    {equiposResult.amarillo.map(p => (
-                                                        <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                                                            <span className="font-bold text-sm text-slate-200">{p.name}</span>
-                                                            <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-400 font-semibold rounded-lg border border-slate-700">{p.pos1}</span>
-                                                        </div>
-                                                    ))}
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[4]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[5]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
+                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[6]?.name}</div>
+                                                    </div>
+                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg bg-amber-950/80">
+                                                        <div className="text-[10px] text-amber-300 font-bold">DELANTERO</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[7]?.name}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
