@@ -30,7 +30,6 @@
             background-color: #020617;
             color: #f8fafc;
         }
-        /* Estilo del campo de fútbol virtual */
         .football-pitch {
             background: linear-gradient(135deg, #15803d 0%, #166534 100%);
             position: relative;
@@ -175,25 +174,94 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Generador con Restricciones
+            // Función de organización táctica en 1-2-4-1
+            const organizarFormacion = (listaJugadores) => {
+                let por = null;
+                let defs = [];
+                let mcs = [];
+                let dels = [];
+
+                // 1. Buscar portero preferente
+                por = listaJugadores.find(p => p.pos1 === 'Portero' || p.pos2 === 'Portero');
+                if (!por) por = listaJugadores[0];
+
+                let resto = listaJugadores.filter(p => p !== por);
+
+                // 2. Buscar 2 defensas
+                for (let i = 0; i < resto.length && defs.length < 2; i++) {
+                    if (resto[i].pos1 === 'Defensa' || resto[i].pos2 === 'Defensa') {
+                        defs.push(resto[i]);
+                    }
+                }
+                resto = resto.filter(p => !defs.includes(p));
+
+                // 3. Buscar 1 delantero
+                let del = resto.find(p => p.pos1 === 'Delantero' || p.pos2 === 'Delantero');
+                if (!del) del = resto[0];
+                dels.push(del);
+                resto = resto.filter(p => p !== del);
+
+                // 4. El resto van al centro del campo (4 medios)
+                mcs = resto;
+
+                // Asegurar tamaños exactos para 1-2-4-1 (completar si falta alguno)
+                while (defs.length < 2 && mcs.length > 0) defs.push(mcs.shift());
+                while (mcs.length < 4 && defs.length > 2) mcs.push(defs.pop());
+
+                return {
+                    portero: por,
+                    defensas: defs.slice(0, 2),
+                    medios: mcs.slice(0, 4),
+                    delantero: dels[0] || mcs.pop()
+                };
+            };
+
+            // Generador Inteligente con Diccionario Exacto para los 16 de WhatsApp
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
                 const lineas = convocatoriaText.split('\n').map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
                 let convocados = [];
 
+                // Diccionario de equivalencias directas para los nombres de WhatsApp
+                const mapaNombres = {
+                    'reta': 'reta',
+                    'agus': 'agustín alcaide',
+                    'ángel': 'ángel',
+                    'angel': 'ángel',
+                    'achraf': 'achraf',
+                    'mon': 'mon',
+                    'charly': 'carlos bordas',
+                    'zlatan': 'carlos lorente',
+                    'alex': 'alex',
+                    'omar': 'omar',
+                    'tora': 'tora',
+                    'totti': 'javi totti',
+                    'pablo': 'pablo megía',
+                    'asensio': 'sergio asencio',
+                    'piñe': 'piñe',
+                    'luis': 'luis plaza',
+                    'valencia': 'carlos morales'
+                };
+
                 lineas.forEach(linea => {
-                    const nombreLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
+                    const textoLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
+                    let claveEncontrada = Object.keys(mapaNombres).find(k => textoLimpio.includes(k));
+                    let terminoBusqueda = claveEncontrada ? mapaNombres[claveEncontrada] : textoLimpio;
+
                     let jugadorEncontrado = players.find(p => {
                         const pName = p.name.toLowerCase();
-                        const matches = pName.match(/\(([^)]+)\)/);
-                        const apodo = matches ? matches[1].toLowerCase() : "";
-                        return pName === nombreLimpio || (apodo && apodo === nombreLimpio) || pName.includes(nombreLimpio) || nombreLimpio.split(' ').some(word => word.length > 2 && pName.includes(word));
+                        return pName.includes(terminoBusqueda);
                     });
-                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) convocados.push(jugadorEncontrado);
+
+                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) {
+                        convocados.push(jugadorEncontrado);
+                    }
                 });
 
-                if (convocados.length < 16) { alert(`Atención: Se han detectado ${convocados.length} jugadores.`); }
+                if (convocados.length < 16) {
+                    alert(`Atención: Se han detectado ${convocados.length} jugadores de 16. Revisa la lista.`);
+                }
 
                 let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
                 let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
@@ -226,7 +294,12 @@
                 const ptsAmarillo = amarillo.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
                 const ptsNegro = negro.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
 
-                setEquiposResult({ amarillo, negro, ptsAmarillo, ptsNegro });
+                setEquiposResult({
+                    negro: organizarFormacion(negro),
+                    amarillo: organizarFormacion(amarillo),
+                    ptsAmarillo,
+                    ptsNegro
+                });
             };
 
             return (
@@ -348,7 +421,7 @@
                             </>
                         )}
 
-                        {/* PESTAÑA 2: GENERADOR DE EQUIPOS CON CAMPO DE FÚTBOL DINÁMICO */}
+                        {/* PESTAÑA 2: GENERADOR DE EQUIPOS CON CAMPO DINÁMICO 1-2-4-1 */}
                         {activeTab === 'generador' && (
                             <div className="space-y-6">
                                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
@@ -375,10 +448,9 @@
                                     </button>
                                 </div>
 
-                                {/* RESULTADO: CAMPO DE FÚTBOL TÁCTICO 3D / 2D DINÁMICO */}
+                                {/* CAMPO DE FÚTBOL TÁCTICO */}
                                 {equiposResult && (
                                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-                                        {/* Marcador Superior Estilo TV */}
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6 items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
                                             <div className="bg-slate-900 p-3 rounded-lg border-l-4 border-sky-400 text-center">
                                                 <div className="text-xs font-bold text-slate-400">EQUIPO NEGRO</div>
@@ -394,94 +466,91 @@
                                             </div>
                                         </div>
 
-                                        {/* CAMPO DE FÚTBOL VISUAL CON JUGADORES */}
                                         <div className="football-pitch rounded-2xl p-6 min-h-[550px] flex flex-col justify-between">
                                             <div className="pitch-lines"></div>
 
-                                            {/* EQUIPO NEGRO (IZQUIERDA) */}
+                                            {/* EQUIPO NEGRO */}
                                             <div className="relative z-10">
                                                 <div className="text-xs font-black text-sky-300 uppercase mb-2 tracking-widest text-center md:text-left">▶ Ataque Equipo Negro (1-2-4-1)</div>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                                                    {/* Portero y Defensas */}
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[0]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.portero?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[1]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.defensas[0]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[2]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.defensas[1]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[3]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[0]?.name}</div>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[4]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[1]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[5]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[2]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[6]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[3]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg bg-sky-950/80">
                                                         <div className="text-[10px] text-sky-300 font-bold">DELANTERO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro[7]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.delantero?.name}</div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* LÍNEA DE MEDIO CAMPO DIVISORIA */}
                                             <div className="my-4 border-t-2 border-white/30 relative">
                                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white/30 rounded-full"></div>
                                             </div>
 
-                                            {/* EQUIPO AMARILLO (DERECHA) */}
+                                            {/* EQUIPO AMARILLO */}
                                             <div className="relative z-10">
                                                 <div className="text-xs font-black text-amber-300 uppercase mb-2 tracking-widest text-center md:text-left">◀ Ataque Equipo Amarillo (1-2-4-1)</div>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[0]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.portero?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[1]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.defensas[0]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[2]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.defensas[1]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[3]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[0]?.name}</div>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[4]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[1]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[5]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[2]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
                                                         <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[6]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[3]?.name}</div>
                                                     </div>
                                                     <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg bg-amber-950/80">
                                                         <div className="text-[10px] text-amber-300 font-bold">DELANTERO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo[7]?.name}</div>
+                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.delantero?.name}</div>
                                                     </div>
                                                 </div>
                                             </div>
