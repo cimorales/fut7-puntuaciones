@@ -40,7 +40,7 @@
       text-transform: uppercase;
     }
 
-    /* Tabs Nav */
+    /* Navegación de Pestañas */
     .tabs {
       display: flex;
       gap: 10px;
@@ -110,18 +110,7 @@
       width: 100%;
     }
 
-    .btn-save {
-      background: #22c55e;
-      color: #020617;
-      padding: 10px 20px;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-bottom: 15px;
-    }
-
-    /* Estilos Tabla Interactiva de Valoraciones */
+    /* Tabla Principal */
     .table-wrapper {
       overflow-x: auto;
     }
@@ -129,11 +118,11 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
     }
 
     th, td {
-      padding: 6px;
+      padding: 10px;
       text-align: center;
       border: 1px solid var(--border-color);
     }
@@ -143,24 +132,95 @@
       color: var(--accent-yellow);
     }
 
-    th.judge-header {
-      background: #020617;
-      color: var(--accent-blue);
+    tr.player-row {
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    tr.player-row:hover {
+      background: #1e293b;
     }
 
     td.player-name {
       text-align: left;
       font-weight: bold;
-      white-space: nowrap;
     }
 
-    input.attr-input {
-      width: 38px;
-      text-align: center;
-      padding: 4px;
-      font-weight: bold;
+    /* Modal / Ventana Emergente */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
     }
 
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--accent-yellow);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .judge-block {
+      background: #111827;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .judge-block h4 {
+      margin: 0 0 8px 0;
+      color: var(--accent-blue);
+    }
+
+    .attr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .attr-field label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    /* Contenedor de Equipos Generados */
     .teams-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -199,7 +259,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('generador')">🚀 Generar Equipos</button>
-    <button class="tab-btn" onclick="switchTab('plantilla')">📋 Panel de Valoraciones Editable</button>
+    <button class="tab-btn" onclick="switchTab('plantilla')">📋 Scouting & Valoraciones</button>
   </div>
 
   <!-- PESTAÑA 1: GENERADOR DE EQUIPOS -->
@@ -222,43 +282,49 @@
     <div id="resultadoEquipos"></div>
   </div>
 
-  <!-- PESTAÑA 2: TABLA EDITABLE CON LAS 3 CARACTERÍSTICAS POR JUEZ -->
+  <!-- PESTAÑA 2: TABLA CON VENTANA EMERGENTE (MODAL) AL HACER CLICK -->
   <div id="tab-plantilla" class="tab-content">
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Scouting & Valoraciones de Jueces</h2>
-        <button class="btn-save" onclick="guardarEnSupabase()">💾 Guardar Cambios en Supabase</button>
-      </div>
-
+      <h2>Plantilla de Jugadores (Haz clic en un jugador para editar)</h2>
       <div class="table-wrapper">
-        <table id="tablaScouting">
+        <table>
           <thead>
             <tr>
-              <th rowspan="2">Jugador</th>
-              <th rowspan="2">Pos 1</th>
-              <th rowspan="2">Pos 2</th>
-              <th colspan="3" class="judge-header">Agus</th>
-              <th colspan="3" class="judge-header">Tora</th>
-              <th colspan="3" class="judge-header">Lino</th>
-              <th colspan="3" class="judge-header">Reta</th>
-              <th colspan="3" class="judge-header">Neft</th>
-              <th rowspan="2">Media Global</th>
-            </tr>
-            <tr>
-              <!-- Atributos R, V, T por Juez -->
-              <th>R</th><th>V</th><th>T</th>
-              <th>R</th><th>V</th><th>T</th>
-              <th>R</th><th>V</th><th>T</th>
-              <th>R</th><th>V</th><th>T</th>
-              <th>R</th><th>V</th><th>T</th>
+              <th>Jugador</th>
+              <th>Posición 1</th>
+              <th>Posición 2</th>
+              <th>Media Global</th>
             </tr>
           </thead>
-          <tbody id="bodyScouting">
-            <tr><td colspan="20">Cargando plantilla de Supabase...</td></tr>
+          <tbody id="bodyPlantilla">
+            <tr><td colspan="4">Cargando datos de Supabase...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- VENTANA EMERGENTE (MODAL) DE EDICIÓN -->
+<div id="modalPlayer" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalPlayerName">Nombre Jugador</h3>
+      <button class="close-btn" onclick="cerrarModal()">&times;</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+      <div>
+        <label>Posición 1:</label>
+        <select id="modalPos1" onchange="guardarDatosModal()"></select>
+      </div>
+      <div>
+        <label>Posición 2:</label>
+        <select id="modalPos2" onchange="guardarDatosModal()"></select>
+      </div>
+    </div>
+
+    <div id="modalJudgesContainer"></div>
   </div>
 </div>
 
@@ -270,6 +336,7 @@
   const JUECES = ['Agus', 'Tora', 'Lino', 'Reta', 'Neft'];
   const POSICIONES = ['Portero', 'Defensa', 'Medio', 'Delantero'];
   let jugadoresData = [];
+  let currentPlayerIdx = null;
 
   async function cargarDatosSupabase() {
     try {
@@ -277,10 +344,10 @@
       const data = await res.json();
       if (data && data.length > 0) {
         jugadoresData = data[0].datos;
-        renderTablaScouting();
+        renderTablaPlantilla();
       }
     } catch (err) {
-      console.error("Error cargando Supabase:", err);
+      console.error("Error al conectar con Supabase:", err);
     }
   }
 
@@ -298,54 +365,82 @@
     return count > 0 ? (sumaTotal / count).toFixed(1) : "6.0";
   }
 
-  function renderTablaScouting() {
-    const tbody = document.getElementById('bodyScouting');
-    tbody.innerHTML = jugadoresData.map((p, idx) => {
-      let media = calcularMediaGlobal(p);
-      let cellsJueces = JUECES.map(j => {
-        let sc = (p.scores && p.scores[j]) ? p.scores[j] : {r:6, v:6, t:6};
-        return `
-          <td><input class="attr-input" type="number" value="${sc.r}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 'r', this.value)"></td>
-          <td><input class="attr-input" type="number" value="${sc.v}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 'v', this.value)"></td>
-          <td><input class="attr-input" type="number" value="${sc.t}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 't', this.value)"></td>
-        `;
-      }).join('');
+  function renderTablaPlantilla() {
+    const tbody = document.getElementById('bodyPlantilla');
+    tbody.innerHTML = jugadoresData.map((p, idx) => `
+      <tr class="player-row" onclick="abrirModal(${idx})">
+        <td class="player-name">${p.name}</td>
+        <td>${p.pos1}</td>
+        <td>${p.pos2}</td>
+        <td><b>${calcularMediaGlobal(p)}</b></td>
+      </tr>
+    `).join('');
+  }
 
+  function abrirModal(idx) {
+    currentPlayerIdx = idx;
+    const p = jugadoresData[idx];
+
+    document.getElementById('modalPlayerName').innerText = p.name;
+    
+    // Selects Posición
+    const selPos1 = document.getElementById('modalPos1');
+    const selPos2 = document.getElementById('modalPos2');
+    selPos1.innerHTML = POSICIONES.map(pos => `<option value="${pos}" ${p.pos1 === pos ? 'selected' : ''}>${pos}</option>`).join('');
+    selPos2.innerHTML = POSICIONES.map(pos => `<option value="${pos}" ${p.pos2 === pos ? 'selected' : ''}>${pos}</option>`).join('');
+
+    // Bloques de Jueces
+    const judgesDiv = document.getElementById('modalJudgesContainer');
+    judgesDiv.innerHTML = JUECES.map(j => {
+      let sc = (p.scores && p.scores[j]) ? p.scores[j] : {r:6, v:6, t:6};
       return `
-        <tr>
-          <td class="player-name">${p.name}</td>
-          <td>
-            <select onchange="updatePos(${idx}, 'pos1', this.value)">
-              ${POSICIONES.map(pos => `<option value="${pos}" ${p.pos1 === pos ? 'selected' : ''}>${pos}</option>`).join('')}
-            </select>
-          </td>
-          <td>
-            <select onchange="updatePos(${idx}, 'pos2', this.value)">
-              ${POSICIONES.map(pos => `<option value="${pos}" ${p.pos2 === pos ? 'selected' : ''}>${pos}</option>`).join('')}
-            </select>
-          </td>
-          ${cellsJueces}
-          <td><b id="media-${idx}">${media}</b></td>
-        </tr>
+        <div class="judge-block">
+          <h4>Juez: ${j}</h4>
+          <div class="attr-grid">
+            <div class="attr-field">
+              <label>Resistencia</label>
+              <input type="number" value="${sc.r}" min="1" max="10" onchange="actualizarScoreModal('${j}', 'r', this.value)">
+            </div>
+            <div class="attr-field">
+              <label>Velocidad</label>
+              <input type="number" value="${sc.v}" min="1" max="10" onchange="actualizarScoreModal('${j}', 'v', this.value)">
+            </div>
+            <div class="attr-field">
+              <label>Técnica</label>
+              <input type="number" value="${sc.t}" min="1" max="10" onchange="actualizarScoreModal('${j}', 't', this.value)">
+            </div>
+          </div>
+        </div>
       `;
     }).join('');
+
+    document.getElementById('modalPlayer').classList.add('open');
   }
 
-  function updateScore(pIdx, juez, attr, val) {
-    if (!jugadoresData[pIdx].scores) jugadoresData[pIdx].scores = {};
-    if (!jugadoresData[pIdx].scores[juez]) jugadoresData[pIdx].scores[juez] = {r:6, v:6, t:6};
-    
-    jugadoresData[pIdx].scores[juez][attr] = parseFloat(val) || 0;
-    document.getElementById(`media-${pIdx}`).innerText = calcularMediaGlobal(jugadoresData[pIdx]);
+  function cerrarModal() {
+    document.getElementById('modalPlayer').classList.remove('open');
+    renderTablaPlantilla();
+    sincronizarSupabaseAuto();
   }
 
-  function updatePos(pIdx, posKey, val) {
-    jugadoresData[pIdx][posKey] = val;
+  function actualizarScoreModal(juez, attr, val) {
+    let p = jugadoresData[currentPlayerIdx];
+    if (!p.scores) p.scores = {};
+    if (!p.scores[juez]) p.scores[juez] = {r:6, v:6, t:6};
+    p.scores[juez][attr] = parseFloat(val) || 0;
+    guardarDatosModal();
   }
 
-  async function guardarEnSupabase() {
+  function guardarDatosModal() {
+    let p = jugadoresData[currentPlayerIdx];
+    p.pos1 = document.getElementById('modalPos1').value;
+    p.pos2 = document.getElementById('modalPos2').value;
+    sincronizarSupabaseAuto();
+  }
+
+  async function sincronizarSupabaseAuto() {
     try {
-      const res = await fetch(SUPABASE_UPDATE_URL, {
+      await fetch(SUPABASE_UPDATE_URL, {
         method: 'PATCH',
         headers: {
           'apikey': SUPABASE_KEY,
@@ -355,10 +450,8 @@
         },
         body: JSON.stringify({ datos: jugadoresData })
       });
-      if (res.ok) alert("¡Cambios e historial guardados en Supabase!");
-      else alert("Error al guardar en Supabase.");
     } catch (err) {
-      alert("Error de conexión al guardar.");
+      console.error("Error al sincronizar con Supabase:", err);
     }
   }
 
