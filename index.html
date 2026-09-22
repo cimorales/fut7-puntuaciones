@@ -20,17 +20,17 @@
       background-color: var(--bg-dark);
       color: var(--text-light);
       margin: 0;
-      padding: 20px;
+      padding: 15px;
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
     header {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
 
     header h1 {
@@ -38,12 +38,6 @@
       margin: 0 0 5px 0;
       font-size: 2rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    header p {
-      color: var(--text-muted);
-      margin: 0;
     }
 
     /* Tabs Nav */
@@ -79,7 +73,6 @@
       display: block;
     }
 
-    /* Cards */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -90,25 +83,23 @@
 
     label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       font-weight: bold;
       color: var(--text-light);
     }
 
     select, textarea, input {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       background: #1e293b;
       border: 1px solid #334155;
       border-radius: 6px;
       color: white;
       box-sizing: border-box;
-      margin-bottom: 15px;
     }
 
-    button.btn-primary {
-      width: 100%;
-      padding: 12px;
+    .btn-primary {
+      padding: 12px 20px;
       background: var(--accent-yellow);
       color: #020617;
       font-weight: bold;
@@ -116,14 +107,60 @@
       border-radius: 6px;
       font-size: 1rem;
       cursor: pointer;
-      transition: background 0.2s;
+      width: 100%;
     }
 
-    button.btn-primary:hover {
-      background: #d97706;
+    .btn-save {
+      background: #22c55e;
+      color: #020617;
+      padding: 10px 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 15px;
     }
 
-    /* Resultados de Equipos */
+    /* Estilos Tabla Interactiva de Valoraciones */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+
+    th {
+      background: #1e293b;
+      color: var(--accent-yellow);
+    }
+
+    th.judge-header {
+      background: #020617;
+      color: var(--accent-blue);
+    }
+
+    td.player-name {
+      text-align: left;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    input.attr-input {
+      width: 38px;
+      text-align: center;
+      padding: 4px;
+      font-weight: bold;
+    }
+
     .teams-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -132,9 +169,7 @@
     }
 
     @media (max-width: 768px) {
-      .teams-grid {
-        grid-template-columns: 1fr;
-      }
+      .teams-grid { grid-template-columns: 1fr; }
     }
 
     .team-box {
@@ -147,46 +182,11 @@
     .team-box.negro { border-top-color: var(--accent-blue); }
     .team-box.amarillo { border-top-color: var(--accent-yellow); }
 
-    .team-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
     .player-list-item {
       display: flex;
       justify-content: space-between;
       padding: 8px 0;
       border-bottom: 1px solid #1f2937;
-    }
-
-    .player-pos {
-      font-size: 0.8rem;
-      background: #1e293b;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: var(--text-muted);
-    }
-
-    /* Tabla de Jugadores */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    th {
-      background: #1e293b;
-      color: var(--accent-yellow);
     }
   </style>
 </head>
@@ -195,13 +195,11 @@
 <div class="container">
   <header>
     <h1>Fut7 Scouting Pro</h1>
-    <p>Gestión de Plantilla y Generador de Equipos Equilibrados</p>
   </header>
 
-  <!-- Navegación de Pestañas -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('generador')">🚀 Generar Equipos</button>
-    <button class="tab-btn" onclick="switchTab('plantilla')">📋 Ver Plantilla / Puntuaciones</button>
+    <button class="tab-btn" onclick="switchTab('plantilla')">📋 Panel de Valoraciones Editable</button>
   </div>
 
   <!-- PESTAÑA 1: GENERADOR DE EQUIPOS -->
@@ -210,37 +208,53 @@
       <h2>Convocatoria del Día</h2>
       
       <label for="diaPartido">Día del partido:</label>
-      <select id="diaPartido">
+      <select id="diaPartido" style="margin-bottom:15px;">
         <option value="Lunes">Lunes</option>
         <option value="Miercoles">Miércoles (Priorizar Grupo México)</option>
       </select>
 
       <label for="listaConvocatoria">Pega la lista de 16 convocados de WhatsApp:</label>
-      <textarea id="listaConvocatoria" rows="8" placeholder="1. Reta&#10;2. Agus&#10;3. Ángel&#10;4. Achraf..."></textarea>
+      <textarea id="listaConvocatoria" rows="7" placeholder="1. Reta&#10;2. Agus..."></textarea>
 
-      <button class="btn-primary" onclick="generarEquiposWeb()">⚽ Calcular y Repartir Equipos</button>
+      <button class="btn-primary" style="margin-top:15px;" onclick="generarEquiposWeb()">⚽ Calcular Equipos Equilibrados</button>
     </div>
 
     <div id="resultadoEquipos"></div>
   </div>
 
-  <!-- PESTAÑA 2: VER / EDITAR PLANTILLA -->
+  <!-- PESTAÑA 2: TABLA EDITABLE CON LAS 3 CARACTERÍSTICAS POR JUEZ -->
   <div id="tab-plantilla" class="tab-content">
     <div class="card">
-      <h2>Plantilla Completa de Jugadores</h2>
-      <div style="overflow-x: auto;">
-        <table id="tablaJugadores">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Scouting & Valoraciones de Jueces</h2>
+        <button class="btn-save" onclick="guardarEnSupabase()">💾 Guardar Cambios en Supabase</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="tablaScouting">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nombre / Apodo</th>
-              <th>Posición 1</th>
-              <th>Posición 2</th>
-              <th>Media Global</th>
+              <th rowspan="2">Jugador</th>
+              <th rowspan="2">Pos 1</th>
+              <th rowspan="2">Pos 2</th>
+              <th colspan="3" class="judge-header">Agus</th>
+              <th colspan="3" class="judge-header">Tora</th>
+              <th colspan="3" class="judge-header">Lino</th>
+              <th colspan="3" class="judge-header">Reta</th>
+              <th colspan="3" class="judge-header">Neft</th>
+              <th rowspan="2">Media Global</th>
+            </tr>
+            <tr>
+              <!-- Atributos R, V, T por Juez -->
+              <th>R</th><th>V</th><th>T</th>
+              <th>R</th><th>V</th><th>T</th>
+              <th>R</th><th>V</th><th>T</th>
+              <th>R</th><th>V</th><th>T</th>
+              <th>R</th><th>V</th><th>T</th>
             </tr>
           </thead>
-          <tbody id="bodyJugadores">
-            <tr><td colspan="5">Cargando datos de Supabase...</td></tr>
+          <tbody id="bodyScouting">
+            <tr><td colspan="20">Cargando plantilla de Supabase...</td></tr>
           </tbody>
         </table>
       </div>
@@ -250,48 +264,102 @@
 
 <script>
   const SUPABASE_URL = "https://vwnpmdstzqjdybxvxhvs.supabase.co/rest/v1/jugadores?select=datos&id=eq.1";
+  const SUPABASE_UPDATE_URL = "https://vwnpmdstzqjdybxvxhvs.supabase.co/rest/v1/jugadores?id=eq.1";
   const SUPABASE_KEY = "sb_publishable_SVMtK51bFQgPMBrWEJQgBg_vsqvQgHb";
+  
+  const JUECES = ['Agus', 'Tora', 'Lino', 'Reta', 'Neft'];
+  const POSICIONES = ['Portero', 'Defensa', 'Medio', 'Delantero'];
   let jugadoresData = [];
 
-  // Cargar datos de Supabase al iniciar
   async function cargarDatosSupabase() {
     try {
-      const res = await fetch(SUPABASE_URL, {
-        headers: { 'apikey': SUPABASE_KEY }
-      });
+      const res = await fetch(SUPABASE_URL, { headers: { 'apikey': SUPABASE_KEY } });
       const data = await res.json();
       if (data && data.length > 0) {
         jugadoresData = data[0].datos;
-        renderTablaPlantilla();
+        renderTablaScouting();
       }
     } catch (err) {
-      console.error("Error al cargar Supabase:", err);
+      console.error("Error cargando Supabase:", err);
     }
   }
 
-  function getMediaJugador(p) {
-    const jueces = ['Agus', 'Tora', 'Lino', 'Reta', 'Neft'];
-    let suma = 0, count = 0;
-    jueces.forEach(j => {
+  function calcularMediaGlobal(p) {
+    let sumaTotal = 0, count = 0;
+    JUECES.forEach(j => {
       if (p.scores && p.scores[j]) {
-        suma += (p.scores[j].r + p.scores[j].v + p.scores[j].t) / 3;
+        let r = parseFloat(p.scores[j].r) || 0;
+        let v = parseFloat(p.scores[j].v) || 0;
+        let t = parseFloat(p.scores[j].t) || 0;
+        sumaTotal += (r + v + t) / 3;
         count++;
       }
     });
-    return count > 0 ? (suma / count).toFixed(1) : "6.0";
+    return count > 0 ? (sumaTotal / count).toFixed(1) : "6.0";
   }
 
-  function renderTablaPlantilla() {
-    const tbody = document.getElementById('bodyJugadores');
-    tbody.innerHTML = jugadoresData.map(p => `
-      <tr>
-        <td>${p.id}</td>
-        <td><b>${p.name}</b></td>
-        <td><span class="player-pos">${p.pos1}</span></td>
-        <td><span class="player-pos">${p.pos2}</span></td>
-        <td><b>${getMediaJugador(p)}</b></td>
-      </tr>
-    `).join('');
+  function renderTablaScouting() {
+    const tbody = document.getElementById('bodyScouting');
+    tbody.innerHTML = jugadoresData.map((p, idx) => {
+      let media = calcularMediaGlobal(p);
+      let cellsJueces = JUECES.map(j => {
+        let sc = (p.scores && p.scores[j]) ? p.scores[j] : {r:6, v:6, t:6};
+        return `
+          <td><input class="attr-input" type="number" value="${sc.r}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 'r', this.value)"></td>
+          <td><input class="attr-input" type="number" value="${sc.v}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 'v', this.value)"></td>
+          <td><input class="attr-input" type="number" value="${sc.t}" min="1" max="10" onchange="updateScore(${idx}, '${j}', 't', this.value)"></td>
+        `;
+      }).join('');
+
+      return `
+        <tr>
+          <td class="player-name">${p.name}</td>
+          <td>
+            <select onchange="updatePos(${idx}, 'pos1', this.value)">
+              ${POSICIONES.map(pos => `<option value="${pos}" ${p.pos1 === pos ? 'selected' : ''}>${pos}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <select onchange="updatePos(${idx}, 'pos2', this.value)">
+              ${POSICIONES.map(pos => `<option value="${pos}" ${p.pos2 === pos ? 'selected' : ''}>${pos}</option>`).join('')}
+            </select>
+          </td>
+          ${cellsJueces}
+          <td><b id="media-${idx}">${media}</b></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function updateScore(pIdx, juez, attr, val) {
+    if (!jugadoresData[pIdx].scores) jugadoresData[pIdx].scores = {};
+    if (!jugadoresData[pIdx].scores[juez]) jugadoresData[pIdx].scores[juez] = {r:6, v:6, t:6};
+    
+    jugadoresData[pIdx].scores[juez][attr] = parseFloat(val) || 0;
+    document.getElementById(`media-${pIdx}`).innerText = calcularMediaGlobal(jugadoresData[pIdx]);
+  }
+
+  function updatePos(pIdx, posKey, val) {
+    jugadoresData[pIdx][posKey] = val;
+  }
+
+  async function guardarEnSupabase() {
+    try {
+      const res = await fetch(SUPABASE_UPDATE_URL, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ datos: jugadoresData })
+      });
+      if (res.ok) alert("¡Cambios e historial guardados en Supabase!");
+      else alert("Error al guardar en Supabase.");
+    } catch (err) {
+      alert("Error de conexión al guardar.");
+    }
   }
 
   function switchTab(tabName) {
@@ -311,29 +379,20 @@
     const texto = document.getElementById('listaConvocatoria').value.toLowerCase();
     const esMiercoles = document.getElementById('diaPartido').value === 'Miercoles';
 
-    if (!texto.trim()) {
-      alert("Por favor, pega la lista de convocados.");
-      return;
-    }
+    if (!texto.trim()) { alert("Pega la lista de convocados."); return; }
 
-    // Filtrar convocados haciendo coincidir nombres/apodos
     let convocados = jugadoresData.filter(p => {
       let nameClean = p.name.toLowerCase();
       let parts = nameClean.split(' ');
       return parts.some(part => part.length > 2 && texto.includes(part));
     });
 
-    if (convocados.length < 16) {
-      alert(`Se han detectado ${convocados.length} jugadores de la lista. Asegúrate de incluir 16 convocados.`);
-    }
-
-    // Identificar restricciones fijas
     let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
     let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
     let achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
 
     let resto = convocados.filter(p => p !== charly);
-    resto.sort((a, b) => parseFloat(getMediaJugador(b)) - parseFloat(getMediaJugador(a)));
+    resto.sort((a, b) => parseFloat(calcularMediaGlobal(b)) - parseFloat(calcularMediaGlobal(a)));
 
     let amarillo = [charly];
     let negro = [];
@@ -354,39 +413,27 @@
       }
     });
 
-    // Puntos acumulados
-    let ptsAmarillo = amarillo.reduce((acc, p) => acc + (parseFloat(getMediaJugador(p)) * 8), 0).toFixed(1);
-    let ptsNegro = negro.reduce((acc, p) => acc + (parseFloat(getMediaJugador(p)) * 8), 0).toFixed(1);
+    let ptsAmarillo = amarillo.reduce((acc, p) => acc + (parseFloat(calcularMediaGlobal(p)) * 8), 0).toFixed(1);
+    let ptsNegro = negro.reduce((acc, p) => acc + (parseFloat(calcularMediaGlobal(p)) * 8), 0).toFixed(1);
 
-    // Formatear salida en pantalla
     let html = `
       <div class="card">
         <h2>Alineación Generada</h2>
         <div class="teams-grid">
           <div class="team-box negro">
-            <div class="team-header">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
               <h3>EQUIPO NEGRO</h3>
               <span style="color:var(--accent-blue); font-weight:bold;">PUNTOS: ${ptsNegro}</span>
             </div>
-            ${negro.map(p => `
-              <div class="player-list-item">
-                <span><b>${p.name}</b></span>
-                <span class="player-pos">${p.pos1}</span>
-              </div>
-            `).join('')}
+            ${negro.map(p => `<div class="player-list-item"><span><b>${p.name}</b></span><span>${p.pos1}</span></div>`).join('')}
           </div>
 
           <div class="team-box amarillo">
-            <div class="team-header">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
               <h3 style="color:var(--accent-yellow);">EQUIPO AMARILLO</h3>
               <span style="color:var(--accent-yellow); font-weight:bold;">PUNTOS: ${ptsAmarillo}</span>
             </div>
-            ${amarillo.map(p => `
-              <div class="player-list-item">
-                <span><b>${p.name}</b></span>
-                <span class="player-pos">${p.pos1}</span>
-              </div>
-            `).join('')}
+            ${amarillo.map(p => `<div class="player-list-item"><span><b>${p.name}</b></span><span>${p.pos1}</span></div>`).join('')}
           </div>
         </div>
       </div>
@@ -395,7 +442,6 @@
     document.getElementById('resultadoEquipos').innerHTML = html;
   }
 
-  // Cargar datos automáticamente al abrir
   window.onload = cargarDatosSupabase;
 </script>
 
