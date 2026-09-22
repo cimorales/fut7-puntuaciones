@@ -194,39 +194,58 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Función del Generador de Equipos
+            // Función del Generador de Equipos con Restricciones Obligatorias
             const generarEquipos = () => {
-                if (!convocatoriaText.trim()) return;
-                
+                if (!convocatoriaText.trim()) {
+                    alert("Por favor, pega la lista de convocados.");
+                    return;
+                }
+
                 const textoLower = convocatoriaText.toLowerCase();
-                const convocados = players.filter(p => {
+                let convocados = players.filter(p => {
                     const nameLower = p.name.toLowerCase();
                     const parts = nameLower.split(' ');
                     return parts.some(part => part.length > 2 && textoLower.includes(part));
                 });
 
-                const charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
-                const zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
-                const achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
+                if (convocados.length < 16) {
+                    alert(`Atención: Se han detectado ${convocados.length} jugadores. Comprueba que estén los 16.`);
+                }
 
-                const resto = convocados.filter(p => p !== charly);
+                // Restricciones fijas
+                let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
+                let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
+                let achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
+
+                const miembrosMexico = ['ramón', 'luis iglesias', 'juanjo', 'nacho', 'miguel', 'piñe'];
+                let resto = convocados.filter(p => p !== charly);
                 resto.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
 
-                const amarillo = [charly];
-                const negro = [];
+                let amarillo = [charly];
+                let negro = [];
 
                 resto.forEach(p => {
+                    const pNameLower = p.name.toLowerCase();
+                    
                     if (p === zlatan) {
                         if (amarillo.includes(achraf)) negro.push(p);
                         else amarillo.push(p);
                     } else if (p === achraf) {
                         if (amarillo.includes(zlatan)) negro.push(p);
+                        else amarillo.push(p);
+                    } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower.includes(m))) {
+                        if (amarillo.length < 8) amarillo.push(p);
                         else negro.push(p);
                     } else {
-                        if (amarillo.length < 8 && (negro.length >= amarillo.length || diaPartido === 'Miercoles')) {
+                        const ptsAmarilloActual = amarillo.reduce((acc, current) => acc + calcGlobalAvg(current.scores), 0);
+                        const ptsNegroActual = negro.reduce((acc, current) => acc + calcGlobalAvg(current.scores), 0);
+
+                        if (amarillo.length < 8 && (ptsAmarilloActual <= ptsNegroActual || negro.length >= 8)) {
                             amarillo.push(p);
-                        } else {
+                        } else if (negro.length < 8) {
                             negro.push(p);
+                        } else {
+                            amarillo.push(p);
                         }
                     }
                 });
