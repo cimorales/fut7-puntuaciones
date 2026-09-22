@@ -65,6 +65,7 @@
             { id: 'Neft', name: 'Neft', accent: '#f43f5e' },
         ];
 
+        // JSON INTEGRADO DE PLANTILLA COMPLETA
         const INITIAL_PLAYERS = [
             { id: 1, name: "Carlos Bordas (Charly)", pos1: "Medio", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:7, v:7, t:7}, Reta: {r:7, v:7, t:7}, Neft: {r:7, v:7, t:7} } },
             { id: 2, name: "Carlos Lorente (Zlatan)", pos1: "Medio", pos2: "Defensa", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:7, v:7, t:7}, Lino: {r:7, v:7, t:7}, Reta: {r:8, v:8, t:8}, Neft: {r:8, v:8, t:8} } },
@@ -121,7 +122,7 @@
                     try {
                         const { data } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
                         if (data && data.datos) setPlayers(data.datos);
-                    } catch (e) { console.log("Cargando plantilla inicial..."); }
+                    } catch (e) { console.log("Usando plantilla integrada..."); }
                 }
                 loadDataFromCloud();
             }, []);
@@ -211,7 +212,7 @@
                 };
             };
 
-            // Generador Inteligente con Diccionario actualizado para Miércoles y Lunes
+            // Generador Inteligente con Diccionario robusto para Lunes y Miércoles
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
@@ -439,7 +440,7 @@
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-xs font-bold text-slate-400 mb-2">Pega la lista de WhatsApp:</label>
-                                            <textarea rows="4" value={convocatoriaText} onChange={e => setConvocatoriaText(e.target.value)} placeholder="1. Reta&#10;2. Agus&#10;3. Ángel..." className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 font-mono"></textarea>
+                                            <textarea rows="4" value={convocatoriaText} onChange={e => setConvocatoriaText(e.target.value)} placeholder="1. Sergio A.&#10;2. Javi alto&#10;3. Nacho..." className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 font-mono"></textarea>
                                         </div>
                                     </div>
 
