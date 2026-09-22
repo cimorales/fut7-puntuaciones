@@ -194,32 +194,37 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Función del Generador de Equipos con Restricciones y Búsqueda Inteligente
+            // Función del Generador de Equipos con Búsqueda Inteligente y Restricciones
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) {
                     alert("Por favor, pega la lista de convocados.");
                     return;
                 }
 
-                const textoLower = convocatoriaText.toLowerCase();
-                
-                // Búsqueda inteligente para reconocer nombres, apodos y nombres cortos (Mon, Alex, Luis, etc.)
-                let convocados = players.filter(p => {
-                    const nameLower = p.name.toLowerCase();
-                    const matches = nameLower.match(/\(([^)]+)\)/);
-                    const apodo = matches ? matches[1] : "";
-                    const primerNombre = nameLower.split(' ')[0];
+                const lineas = convocatoriaText.split('\n').map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
+                let convocados = [];
 
-                    return textoLower.includes(nameLower) || 
-                           (apodo && textoLower.includes(apodo)) || 
-                           textoLower.includes(primerNombre) ||
-                           (nameLower.includes("luis") && textoLower.includes("luis")) ||
-                           (nameLower.includes("mon") && textoLower.includes("mon")) ||
-                           (nameLower.includes("alex") && textoLower.includes("alex"));
+                lineas.forEach(linea => {
+                    const nombreLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
+                    
+                    let jugadorEncontrado = players.find(p => {
+                        const pName = p.name.toLowerCase();
+                        const matches = pName.match(/\(([^)]+)\)/);
+                        const apodo = matches ? matches[1].toLowerCase() : "";
+                        
+                        return pName === nombreLimpio || 
+                               (apodo && apodo === nombreLimpio) ||
+                               pName.includes(nombreLimpio) ||
+                               nombreLimpio.split(' ').some(word => word.length > 2 && pName.includes(word));
+                    });
+
+                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) {
+                        convocados.push(jugadorEncontrado);
+                    }
                 });
 
                 if (convocados.length < 16) {
-                    alert(`Atención: Se han detectado ${convocados.length} jugadores. Comprueba que estén los 16.`);
+                    alert(`Atención: Se han detectado ${convocados.length} jugadores. Revisa los nombres de la lista.`);
                 }
 
                 // Restricciones fijas
@@ -242,7 +247,7 @@
                         else amarillo.push(p);
                     } else if (p === achraf) {
                         if (amarillo.includes(zlatan)) negro.push(p);
-                        else amarillo.push(p);
+                        else negro.push(p);
                     } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower.includes(m))) {
                         if (amarillo.length < 8) amarillo.push(p);
                         else negro.push(p);
