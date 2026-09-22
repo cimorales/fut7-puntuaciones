@@ -174,20 +174,18 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Función de organización táctica en 1-2-4-1
+            // Organización táctica en 1-2-4-1
             const organizarFormacion = (listaJugadores) => {
                 let por = null;
                 let defs = [];
                 let mcs = [];
                 let dels = [];
 
-                // 1. Buscar portero preferente
                 por = listaJugadores.find(p => p.pos1 === 'Portero' || p.pos2 === 'Portero');
                 if (!por) por = listaJugadores[0];
 
                 let resto = listaJugadores.filter(p => p !== por);
 
-                // 2. Buscar 2 defensas
                 for (let i = 0; i < resto.length && defs.length < 2; i++) {
                     if (resto[i].pos1 === 'Defensa' || resto[i].pos2 === 'Defensa') {
                         defs.push(resto[i]);
@@ -195,16 +193,13 @@
                 }
                 resto = resto.filter(p => !defs.includes(p));
 
-                // 3. Buscar 1 delantero
                 let del = resto.find(p => p.pos1 === 'Delantero' || p.pos2 === 'Delantero');
                 if (!del) del = resto[0];
                 dels.push(del);
                 resto = resto.filter(p => p !== del);
 
-                // 4. El resto van al centro del campo (4 medios)
                 mcs = resto;
 
-                // Asegurar tamaños exactos para 1-2-4-1 (completar si falta alguno)
                 while (defs.length < 2 && mcs.length > 0) defs.push(mcs.shift());
                 while (mcs.length < 4 && defs.length > 2) mcs.push(defs.pop());
 
@@ -216,14 +211,13 @@
                 };
             };
 
-            // Generador Inteligente con Diccionario Exacto para los 16 de WhatsApp
+            // Generador Inteligente con Diccionario actualizado para Miércoles y Lunes
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
                 const lineas = convocatoriaText.split('\n').map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
                 let convocados = [];
 
-                // Diccionario de equivalencias directas para los nombres de WhatsApp
                 const mapaNombres = {
                     'reta': 'reta',
                     'agus': 'agustín alcaide',
@@ -240,13 +234,19 @@
                     'pablo': 'pablo megía',
                     'asensio': 'sergio asencio',
                     'piñe': 'piñe',
+                    'luis i': 'luis iglesias',
                     'luis': 'luis plaza',
-                    'valencia': 'carlos morales'
+                    'valencia': 'carlos morales',
+                    'sergio a': 'sergio a. (nieva)',
+                    'javi alto': 'javi (alto)',
+                    'jj': 'juanjo',
+                    'guille': 'guillermo',
+                    'carlos': 'carlos garcía'
                 };
 
                 lineas.forEach(linea => {
                     const textoLimpio = linea.replace(/^\d+[\.\-\)]\s*/, '').trim();
-                    let claveEncontrada = Object.keys(mapaNombres).find(k => textoLimpio.includes(k));
+                    let claveEncontrada = Object.keys(mapaNombres).find(k => textoLimpio === k || textoLimpio.startsWith(k));
                     let terminoBusqueda = claveEncontrada ? mapaNombres[claveEncontrada] : textoLimpio;
 
                     let jugadorEncontrado = players.find(p => {
