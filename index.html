@@ -94,6 +94,139 @@
             { id: 25, name: "Asensio", pos1: "Delantero", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } }
         ];
 
+        // ================== IDENTIFICACIÓN DE NOMBRES Y PROMPT PARA LA IA ==================
+        const IDS = { CHARLY: 1, ZLATAN: 2, ACHRAF: 10, LUIS_PLAZA: 13, SERGIO: 33, JAVI_ALTO: 23 };
+        const MEXICO_IDS = [15, 16, 17, 18, 19, 11]; // Ramón, Luis I, Jj, Nacho, Miguel, Piñe
+        const NIVEL_BAJO = { ids: [IDS.LUIS_PLAZA], nombres: ['angel', 'valencia', 'totti', 'kiko'] };
+
+        const normTxt = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/[.,;:!¡?¿"'`´]/g, ' ').replace(/\s+/g, ' ').trim();
+        const baseNombre = (n) => normTxt((n || '').split('(')[0]);
+        const parentesis = (n) => { const m = (n || '').match(/\(([^)]*)\)/); return m ? normTxt(m[1]) : ''; };
+
+        // Equivalencias por defecto del proyecto (nombre normalizado -> id)
+        const ALIAS = {
+            'luis': 13, 'luis plaza': 13,
+            'luis i': 16, 'luis iglesias': 16,
+            'sergio': 33, 'sergio (agus)': 33,
+            'sergio asensio': 25, 'asensio': 25, 'sergio asensio (luis)': 25,
+            'sergio a': 22, 'nieva': 22, 'sergio a (nieva)': 22,
+            'carlos': 7, 'agus': 9, 'neft': 26, 'robe': 36, 'robe (neft)': 36,
+            'jj': 17, 'juanjo': 17, 'guille': 24, 'guillermo': 24,
+            'charly': 1, 'zlatan': 2, 'achraf': 10, 'javi alto': 23,
+            'ramon': 15, 'ramon mexico': 15
+        };
+
+        let EMOJI_RE;
+        try { EMOJI_RE = new RegExp('[\\p{Extended_Pictographic}\\uFE0F\\u200D]', 'gu'); } catch (e) { EMOJI_RE = /[\uD800-\uDFFF\uFE0F\u200D\u2600-\u27BF]/g; }
+
+        const limpiarLinea = (l) => (l || '').replace(EMOJI_RE, '')
+            .replace(/^[\s\-•*·>]*\d*\s*[\.\-\)\:]?\s*/, '')
+            .replace(/[\s\-•*·]+$/, '').trim();
+
+        const resolverNombre = (texto, players) => {
+            const key = normTxt(texto);
+            const unico = (lista) => (lista.length === 1 ? lista[0] : null);
+            if (ALIAS[key] !== undefined) {
+                const p = players.find(x => x.id === ALIAS[key]);
+                if (p) return { player: p };
+            }
+            let p = unico(players.filter(x => normTxt(x.name) === key));
+            if (p) return { player: p };
+            p = unico(players.filter(x => baseNombre(x.name) === key));
+            if (p) return { player: p };
+            p = unico(players.filter(x => parentesis(x.name) === key));
+            if (p) return { player: p };
+            const tokens = key.split(' ').filter(w => w.length >= 3);
+            const candidatos = players.filter(x => {
+                const n = normTxt(x.name);
+                return (key.length >= 2 && n.includes(key)) || tokens.some(w => n.split(/[\s()]+/).some(nw => nw.startsWith(w)));
+            });
+            return { player: null, candidatos };
+        };
+
+        const statsJugador = (p) => {
+            const js = JUDGES.map(j => p.scores && p.scores[j.id]);
+            const media = (k) => js.reduce((a, s) => a + (s ? (Number(s[k]) || 0) : 6), 0) / JUDGES.length;
+            const res = media('r'), vel = media('v'), tec = media('t');
+            return { res, vel, tec, pts: (res + vel + tec) / 3 };
+        };
+        const f2 = (n) => n.toFixed(2).replace('.', ',');
+
+        const construirPromptIA = (dia, items) => {
+            const jugadores = items.filter(i => i.player).map(i => ({ p: i.player, s: statsJugador(i.player) }));
+            const externos = items.filter(i => i.ext);
+            const mediaConv = jugadores.length ? jugadores.reduce((a, j) => a + j.s.pts, 0) / jugadores.length : 6;
+            const total = jugadores.length + externos.length;
+            const esMiercoles = dia === 'Miercoles';
+            const L = [];
+
+            L.push('Eres el organizador táctico del torneo Fut7 Scouting Pro. Haz el reparto 8 contra 8 de esta convocatoria.');
+            L.push('IMPORTANTE: todos los datos que necesitas están en este mensaje, ya actualizados. No consultes ninguna web ni API y no inventes datos.');
+            L.push('');
+            L.push(`DÍA DEL PARTIDO: ${esMiercoles ? 'MIÉRCOLES' : 'LUNES'}`);
+            if (total !== 16) L.push(`ATENCIÓN: hay ${total} convocados, no 16. Pregúntame antes de hacer el reparto.`);
+            L.push('');
+            L.push(`CONVOCADOS (${total}). Formato: Nombre | Posición principal (pos1) | Posición secundaria (pos2) | Puntos | RES | VEL | TEC`);
+            jugadores.forEach(({ p, s }) => L.push(`- ${p.name} | ${p.pos1} | ${p.pos2} | ${f2(s.pts)} | ${f2(s.res)} | ${f2(s.vel)} | ${f2(s.tec)}`));
+            externos.forEach(e => L.push(`- EXT: ${e.nombre} | posición desconocida | - | ${f2(mediaConv)} | ${f2(mediaConv)} | ${f2(mediaConv)} | ${f2(mediaConv)}  (externo: valorado con la media de los convocados)`));
+            L.push('');
+
+            // Datos precalculados para que la IA no se equivoque
+            L.push('DATOS PRECALCULADOS');
+            const top = (k) => [...jugadores].sort((a, b) => b.s[k] - a.s[k]).slice(0, 4).map(j => j.p.name);
+            const tv = top('vel'), tt = top('tec');
+            L.push(`- Los 4 más rápidos, de más a menos: ${tv.join(', ')}.`);
+            L.push(`- Los 4 más técnicos, de más a menos: ${tt.join(', ')}.`);
+            const porteros = jugadores.filter(j => j.p.pos1 === 'Portero').map(j => j.p.name);
+            L.push(`- Porteros convocados: ${porteros.length ? porteros.join(', ') : 'NINGUNO'}.`);
+            const bajos = jugadores.filter(j => NIVEL_BAJO.ids.includes(j.p.id) || NIVEL_BAJO.nombres.includes(baseNombre(j.p.name)))
+                .sort((a, b) => a.s.pts - b.s.pts).map(j => j.p.name);
+            L.push(`- Jugadores de nivel más bajo convocados (regla 7), de peor a mejor: ${bajos.length ? bajos.join(', ') : 'ninguno'}.`);
+            if (esMiercoles) {
+                const mex = jugadores.filter(j => MEXICO_IDS.includes(j.p.id)).map(j => j.p.name);
+                L.push(`- Grupo México convocado (regla 5): ${mex.length ? mex.join(', ') : 'ninguno'}.`);
+            }
+            const esp = [];
+            if (jugadores.some(j => j.p.id === IDS.CHARLY)) esp.push('Charly');
+            if (jugadores.some(j => j.p.id === IDS.ZLATAN)) esp.push('Zlatan');
+            if (jugadores.some(j => j.p.id === IDS.ACHRAF)) esp.push('Achraf');
+            if (esp.length) L.push(`- Convocados con regla especial: ${esp.join(', ')}.`);
+            L.push('');
+
+            L.push('REGLAS OBLIGATORIAS');
+            L.push('1. Formación fija 1-2-4-1 en los dos equipos: 1 POR, 2 DEF, 4 MED y 1 DEL.');
+            L.push('2. Charly va SIEMPRE en el Equipo Amarillo.');
+            L.push('3. Zlatan y Achraf NUNCA van en el mismo equipo.');
+            L.push('4. Equilibrio: minimiza la diferencia de puntos totales y equilibra también RES, VEL y TEC. Los 2 más rápidos van en equipos distintos y los 4 más rápidos se reparten 2 y 2. Lo mismo con los más técnicos. Después ajusta el resto para que la diferencia de puntos, RES, VEL y TEC sea la mínima posible.');
+            if (esMiercoles) L.push('5. Es MIÉRCOLES: junta en el mismo equipo al máximo número de miembros del Grupo México convocados, sin romper las reglas 1, 2, 3, 7 y 8. Esta regla va por delante del reparto de los más rápidos y los más técnicos de la regla 4.');
+            else L.push('5. Es LUNES: la regla del Grupo México no se aplica.');
+            L.push('6. Privacidad: en tu respuesta NO muestres estadísticas individuales de ningún jugador. Solo totales o medias de cada equipo.');
+            L.push('7. Nivel más bajo: los jugadores de esa lista se reparten lo más equitativamente posible entre los dos equipos, y los 2 peores de la lista nunca van en el mismo equipo (con 3: 2 en un equipo y 1 en el otro, y el que va solo es uno de los 2 peores).');
+            L.push('8. Posiciones estrictas: cada jugador juega en su pos1. Solo pasa a su pos2 si su pos1 ya está cubierta en su equipo, y a cualquier otra posición solo por fuerza mayor. Un portero juega siempre de portero; si hay 2, uno en cada equipo. Si no hay portero, pon al que menos desequilibre (preferiblemente un defensa) y avísalo. Un delantero juega de DEL. Si coinciden 2 delanteros en un equipo: Sergio pasa a MED en una banda y el otro juega de DEL; Javi alto es delantero puro y juega SIEMPRE de DEL, el otro baja al medio. El equilibrio de la regla 4 se busca dentro de estas posiciones, nunca a costa de ellas.');
+            L.push('Prioridad si hay conflicto: reglas 1, 2, 3, 7 y 8; después la regla 5; y por último el equilibrio de la regla 4.');
+            L.push('');
+
+            L.push('ENTREGA');
+            L.push('1. Equipo Amarillo y Equipo Negro, cada uno con: POR, DEF (2), MED (4, de izquierda a derecha) y DEL.');
+            L.push('2. PUNTOS de cada equipo = suma de los puntos de sus 8 jugadores, con 1 decimal.');
+            L.push('3. Una nota breve de equilibrio: diferencia de puntos, media de RES, VEL y TEC de cada equipo, cómo han quedado repartidos los más rápidos y los más técnicos, y qué jugadores juegan fuera de su pos1 y por qué.');
+            L.push('Antes de responder, comprueba que se cumplen todas las reglas.');
+            return L.join('\n');
+        };
+
+        const copiarTexto = async (txt) => {
+            try { await navigator.clipboard.writeText(txt); return true; } catch (e) {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = txt; ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+                    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length);
+                    const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok;
+                } catch (e2) { return false; }
+            }
+        };
+
         function App() {
             const [activeTab, setActiveTab] = useState('scouting');
             const [players, setPlayers] = useState(INITIAL_PLAYERS);
@@ -105,12 +238,16 @@
             const [diaPartido, setDiaPartido] = useState('Lunes');
             const [convocatoriaText, setConvocatoriaText] = useState('');
             const [equiposResult, setEquiposResult] = useState(null);
+            const [cloudOk, setCloudOk] = useState(false);
+            const [resoluciones, setResoluciones] = useState({});
+            const [iaMsg, setIaMsg] = useState('');
+            const [iaFallback, setIaFallback] = useState('');
 
             useEffect(() => {
                 async function loadDataFromCloud() {
                     try {
-                        const { data } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
-                        if (data && data.datos) setPlayers(data.datos);
+                        const { data, error } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
+                        if (!error && data && data.datos) { setPlayers(data.datos); setCloudOk(true); }
                     } catch (e) { console.log("Usando plantilla integrada..."); }
                 }
                 loadDataFromCloud();
@@ -164,6 +301,65 @@
                 return list;
             }, [players, search, sortByRank]);
 
+            // Análisis de la lista de WhatsApp: quién es quién
+            const analisis = useMemo(() => {
+                const lineas = convocatoriaText.split('\n').map(limpiarLinea).filter(l => l.length > 0);
+                const vistos = new Set();
+                const items = lineas.map(texto => {
+                    const key = normTxt(texto);
+                    const r = resoluciones[key];
+                    let item;
+                    if (r === '?') {
+                        const res = resolverNombre(texto, players);
+                        const cands = res.player ? [res.player, ...players.filter(x => x.id !== res.player.id && normTxt(x.name).includes(normTxt(texto)))] : res.candidatos;
+                        item = { texto, key, pendiente: true, candidatos: cands };
+                    } else if (r === 'ignorar') item = { texto, key, ignorar: true, manual: true };
+                    else if (r === 'ext') item = { texto, key, ext: true, nombre: texto, manual: true };
+                    else if (r !== undefined && r !== '') {
+                        const p = players.find(x => String(x.id) === String(r));
+                        item = p ? { texto, key, player: p, manual: true } : { texto, key, pendiente: true, candidatos: [] };
+                    } else {
+                        const res = resolverNombre(texto, players);
+                        item = res.player ? { texto, key, player: res.player } : { texto, key, pendiente: true, candidatos: res.candidatos };
+                    }
+                    if (item.player) {
+                        if (vistos.has(item.player.id)) item = { ...item, repetido: true };
+                        else vistos.add(item.player.id);
+                    }
+                    return item;
+                });
+                const validos = items.filter(i => (i.player && !i.repetido) || i.ext);
+                return {
+                    items,
+                    validos,
+                    jugadores: validos.filter(i => i.player).map(i => i.player),
+                    pendientes: items.filter(i => i.pendiente),
+                    total: validos.length
+                };
+            }, [convocatoriaText, players, resoluciones]);
+
+            const resolver = (key, valor) => setResoluciones(prev => ({ ...prev, [key]: valor }));
+
+            const prepararPromptIA = () => {
+                if (!cloudOk) { setIaMsg('No se han cargado los datos actualizados. Recarga la página.'); return null; }
+                if (!analisis.items.length) { setIaMsg('Pega primero la lista de WhatsApp.'); return null; }
+                if (analisis.pendientes.length) { setIaMsg('Indica quién es cada nombre marcado en naranja.'); return null; }
+                return construirPromptIA(diaPartido, analisis.validos);
+            };
+
+            const copiarParaIA = async () => {
+                const txt = prepararPromptIA(); if (!txt) return;
+                const ok = await copiarTexto(txt);
+                if (ok) { setIaFallback(''); setIaMsg('✅ Copiado. Pégalo en ChatGPT, Gemini o Claude.'); }
+                else { setIaFallback(txt); setIaMsg('No se ha podido copiar solo. Mantén pulsado el texto de abajo y cópialo.'); }
+            };
+
+            const compartirConIA = async () => {
+                const txt = prepararPromptIA(); if (!txt) return;
+                try { await navigator.share({ text: txt }); setIaMsg(''); }
+                catch (e) { if (e && e.name !== 'AbortError') copiarParaIA(); }
+            };
+
             // Organización táctica en 1-2-4-1
             const organizarFormacion = (listaJugadores) => {
                 let por = null;
@@ -205,66 +401,17 @@
             const generarEquipos = () => {
                 if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
 
-                const lineas = convocatoriaText.split('\n')
-                    .map(l => l.replace(/^\d+[\.\-\)]\s*/, '').trim().toLowerCase())
-                    .filter(l => l.length > 0);
-
-                let convocados = [];
-
-                const mapaNombres = {
-                    'sergio a.': 'sergio a.',
-                    'sergio a': 'sergio a.',
-                    'javi alto': 'javi alto',
-                    'nacho': 'nacho',
-                    'agus': 'agus',
-                    'jj': 'jj',
-                    'miguel': 'miguel',
-                    'luis i': 'luis i',
-                    'luis i.': 'luis i',
-                    'ramón': 'ramón',
-                    'ramon': 'ramón',
-                    'charly': 'charly',
-                    'guille': 'guille',
-                    'alex': 'alex',
-                    'reta': 'reta',
-                    'omar': 'omar',
-                    'carlos': 'carlos',
-                    'luis': 'luis',
-                    'piñe': 'piñe',
-                    'ángel': 'ángel',
-                    'angel': 'ángel',
-                    'achraf': 'achraf',
-                    'mon': 'mon',
-                    'zlatan': 'zlatan',
-                    'tora': 'tora',
-                    'totti': 'totti',
-                    'pablo': 'pablo',
-                    'asensio': 'asensio',
-                    'valencia': 'valencia'
-                };
-
-                lineas.forEach(linea => {
-                    let nombreOficial = mapaNombres[linea] || linea;
-                    let jugadorEncontrado = players.find(p => p.name.toLowerCase() === nombreOficial);
-
-                    if (!jugadorEncontrado) {
-                        jugadorEncontrado = players.find(p => p.name.toLowerCase().includes(linea));
-                    }
-
-                    if (jugadorEncontrado && !convocados.some(j => j.id === jugadorEncontrado.id)) {
-                        convocados.push(jugadorEncontrado);
-                    }
-                });
+                if (analisis.pendientes.length) { alert("Indica primero quién es cada nombre marcado en naranja."); return; }
+                let convocados = analisis.jugadores.slice();
 
                 if (convocados.length < 16) {
                     alert(`Atención: Se han detectado ${convocados.length} jugadores de 16. Revisa los nombres.`);
                 }
 
-                let charly = convocados.find(p => p.name.toLowerCase().includes('charly')) || convocados[0];
-                let zlatan = convocados.find(p => p.name.toLowerCase().includes('zlatan'));
-                let achraf = convocados.find(p => p.name.toLowerCase().includes('achraf'));
+                let charly = convocados.find(p => p.id === IDS.CHARLY) || convocados[0];
+                let zlatan = convocados.find(p => p.id === IDS.ZLATAN);
+                let achraf = convocados.find(p => p.id === IDS.ACHRAF);
 
-                const miembrosMexico = ['ramón', 'luis i', 'jj', 'nacho', 'miguel', 'piñe'];
                 let resto = convocados.filter(p => p !== charly);
                 resto.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
 
@@ -272,12 +419,11 @@
                 let negro = [];
 
                 resto.forEach(p => {
-                    const pNameLower = p.name.toLowerCase();
                     if (p === zlatan) {
                         if (amarillo.includes(achraf)) negro.push(p); else amarillo.push(p);
                     } else if (p === achraf) {
                         if (amarillo.includes(zlatan)) negro.push(p); else amarillo.push(p);
-                    } else if (diaPartido === 'Miercoles' && miembrosMexico.some(m => pNameLower === m || pNameLower.includes(m))) {
+                    } else if (diaPartido === 'Miercoles' && MEXICO_IDS.includes(p.id)) {
                         if (amarillo.length < 8) amarillo.push(p); else negro.push(p);
                     } else {
                         const ptsAmarilloActual = amarillo.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
@@ -440,9 +586,64 @@
                                         </div>
                                     </div>
 
+                                    {analisis.items.length > 0 && (
+                                        <div className="mb-4 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-slate-400">Jugadores identificados</span>
+                                                <span className={`text-sm font-black ${analisis.total === 16 && !analisis.pendientes.length ? 'text-emerald-400' : 'text-amber-400'}`}>{analisis.total}/16</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {analisis.items.filter(i => !i.pendiente).map((i, idx) => (
+                                                    <button key={idx} type="button" onClick={() => resolver(i.key, '?')}
+                                                        title="Toca para corregir"
+                                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${i.repetido ? 'border-rose-700 text-rose-300 line-through' : i.ignorar ? 'border-slate-700 text-slate-500 line-through' : i.ext ? 'border-rose-600 text-rose-300' : 'border-emerald-700/60 text-emerald-300'}`}>
+                                                        {i.ext ? `EXT: ${i.nombre}` : i.ignorar ? i.texto : i.player.name}
+                                                        {i.player && ![normTxt(i.player.name), baseNombre(i.player.name), parentesis(i.player.name)].includes(normTxt(i.texto)) && !i.repetido && <span className="text-slate-500 font-medium"> ({i.texto})</span>}
+                                                        {i.repetido && <span className="font-medium"> repetido</span>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {analisis.pendientes.map((i, idx) => (
+                                                <div key={idx} className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                                                    <span className="text-xs font-bold text-amber-400 sm:w-40 truncate">¿Quién es «{i.texto}»?</span>
+                                                    <select value="" onChange={e => resolver(i.key, e.target.value)} className="flex-1 bg-slate-800 border border-amber-600/60 rounded-lg p-2 text-sm text-slate-200">
+                                                        <option value="">Elige una opción…</option>
+                                                        {i.candidatos.length > 0 && (
+                                                            <optgroup label="Posibles">
+                                                                {i.candidatos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                            </optgroup>
+                                                        )}
+                                                        <option value="ext">Es un externo (EXT)</option>
+                                                        <option value="ignorar">No es un jugador (ignorar línea)</option>
+                                                        <optgroup label="Todos los jugadores">
+                                                            {[...players].sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                        </optgroup>
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <button onClick={generarEquipos} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 uppercase tracking-wider text-sm">
                                         🚀 Calcular y Generar Alineación en el Campo
                                     </button>
+
+                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <button onClick={copiarParaIA} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
+                                            📋 Copiar para la IA
+                                        </button>
+                                        {typeof navigator !== 'undefined' && navigator.share && (
+                                            <button onClick={compartirConIA} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
+                                                📤 Enviar a ChatGPT / Gemini
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-500">Copia las reglas y los datos actualizados de los convocados para pegarlos en ChatGPT, Gemini o Claude. La IA no necesita consultar nada.</p>
+                                    {!cloudOk && <p className="mt-2 text-xs font-bold text-rose-400">Cargando datos de Supabase… Si no cambia, recarga la página.</p>}
+                                    {iaMsg && <p className="mt-2 text-sm font-bold text-amber-300">{iaMsg}</p>}
+                                    {iaFallback && (
+                                        <textarea readOnly rows="8" value={iaFallback} onFocus={e => e.target.select()} className="mt-2 w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono"></textarea>
+                                    )}
                                 </div>
 
                                 {/* CAMPO DE FÚTBOL TÁCTICO */}
