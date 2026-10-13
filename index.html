@@ -94,127 +94,7 @@
             { id: 25, name: "Asensio", pos1: "Delantero", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } }
         ];
 
-        // ================== IDENTIFICACIÓN DE NOMBRES Y PROMPT PARA LA IA ==================
-        const IDS = { CHARLY: 1, ZLATAN: 2, ACHRAF: 10, LUIS_PLAZA: 13, SERGIO: 33, JAVI_ALTO: 23 };
-        const MEXICO_IDS = [15, 16, 17, 18, 19, 11]; // Ramón, Luis I, Jj, Nacho, Miguel, Piñe
-        const NIVEL_BAJO = { ids: [IDS.LUIS_PLAZA], nombres: ['angel', 'valencia', 'totti', 'kiko'] };
-
-        const normTxt = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase().replace(/[.,;:!¡?¿"'`´]/g, ' ').replace(/\s+/g, ' ').trim();
-        const baseNombre = (n) => normTxt((n || '').split('(')[0]);
-        const parentesis = (n) => { const m = (n || '').match(/\(([^)]*)\)/); return m ? normTxt(m[1]) : ''; };
-
-        // Equivalencias por defecto del proyecto (nombre normalizado -> id)
-        const ALIAS = {
-            'luis': 13, 'luis plaza': 13,
-            'luis i': 16, 'luis iglesias': 16,
-            'sergio': 33, 'sergio (agus)': 33,
-            'sergio asensio': 25, 'asensio': 25, 'sergio asensio (luis)': 25,
-            'sergio a': 22, 'nieva': 22, 'sergio a (nieva)': 22,
-            'carlos': 7, 'agus': 9, 'neft': 26, 'robe': 36, 'robe (neft)': 36,
-            'jj': 17, 'juanjo': 17, 'guille': 24, 'guillermo': 24,
-            'charly': 1, 'zlatan': 2, 'achraf': 10, 'javi alto': 23,
-            'ramon': 15, 'ramon mexico': 15
-        };
-
-        let EMOJI_RE;
-        try { EMOJI_RE = new RegExp('[\\p{Extended_Pictographic}\\uFE0F\\u200D]', 'gu'); } catch (e) { EMOJI_RE = /[\uD800-\uDFFF\uFE0F\u200D\u2600-\u27BF]/g; }
-
-        const limpiarLinea = (l) => (l || '').replace(EMOJI_RE, '')
-            .replace(/^[\s\-•*·>]*\d*\s*[\.\-\)\:]?\s*/, '')
-            .replace(/[\s\-•*·]+$/, '').trim();
-
-        const resolverNombre = (texto, players) => {
-            const key = normTxt(texto);
-            const unico = (lista) => (lista.length === 1 ? lista[0] : null);
-            if (ALIAS[key] !== undefined) {
-                const p = players.find(x => x.id === ALIAS[key]);
-                if (p) return { player: p };
-            }
-            let p = unico(players.filter(x => normTxt(x.name) === key));
-            if (p) return { player: p };
-            p = unico(players.filter(x => baseNombre(x.name) === key));
-            if (p) return { player: p };
-            p = unico(players.filter(x => parentesis(x.name) === key));
-            if (p) return { player: p };
-            const tokens = key.split(' ').filter(w => w.length >= 3);
-            const candidatos = players.filter(x => {
-                const n = normTxt(x.name);
-                return (key.length >= 2 && n.includes(key)) || tokens.some(w => n.split(/[\s()]+/).some(nw => nw.startsWith(w)));
-            });
-            return { player: null, candidatos };
-        };
-
-        const statsJugador = (p) => {
-            const js = JUDGES.map(j => p.scores && p.scores[j.id]);
-            const media = (k) => js.reduce((a, s) => a + (s ? (Number(s[k]) || 0) : 6), 0) / JUDGES.length;
-            const res = media('r'), vel = media('v'), tec = media('t');
-            return { res, vel, tec, pts: (res + vel + tec) / 3 };
-        };
-        const f2 = (n) => n.toFixed(2).replace('.', ',');
-
-        const construirPromptIA = (dia, items) => {
-            const jugadores = items.filter(i => i.player).map(i => ({ p: i.player, s: statsJugador(i.player) }));
-            const externos = items.filter(i => i.ext);
-            const mediaConv = jugadores.length ? jugadores.reduce((a, j) => a + j.s.pts, 0) / jugadores.length : 6;
-            const total = jugadores.length + externos.length;
-            const esMiercoles = dia === 'Miercoles';
-            const L = [];
-
-            L.push('Eres el organizador táctico del torneo Fut7 Scouting Pro. Haz el reparto 8 contra 8 de esta convocatoria.');
-            L.push('IMPORTANTE: todos los datos que necesitas están en este mensaje, ya actualizados. No consultes ninguna web ni API y no inventes datos.');
-            L.push('');
-            L.push(`DÍA DEL PARTIDO: ${esMiercoles ? 'MIÉRCOLES' : 'LUNES'}`);
-            if (total !== 16) L.push(`ATENCIÓN: hay ${total} convocados, no 16. Pregúntame antes de hacer el reparto.`);
-            L.push('');
-            L.push(`CONVOCADOS (${total}). Formato: Nombre | Posición principal (pos1) | Posición secundaria (pos2) | Puntos | RES | VEL | TEC`);
-            jugadores.forEach(({ p, s }) => L.push(`- ${p.name} | ${p.pos1} | ${p.pos2} | ${f2(s.pts)} | ${f2(s.res)} | ${f2(s.vel)} | ${f2(s.tec)}`));
-            externos.forEach(e => L.push(`- EXT: ${e.nombre} | posición desconocida | - | ${f2(mediaConv)} | ${f2(mediaConv)} | ${f2(mediaConv)} | ${f2(mediaConv)}  (externo: valorado con la media de los convocados)`));
-            L.push('');
-
-            // Datos precalculados para que la IA no se equivoque
-            L.push('DATOS PRECALCULADOS');
-            const top = (k) => [...jugadores].sort((a, b) => b.s[k] - a.s[k]).slice(0, 4).map(j => j.p.name);
-            const tv = top('vel'), tt = top('tec');
-            L.push(`- Los 4 más rápidos, de más a menos: ${tv.join(', ')}.`);
-            L.push(`- Los 4 más técnicos, de más a menos: ${tt.join(', ')}.`);
-            const porteros = jugadores.filter(j => j.p.pos1 === 'Portero').map(j => j.p.name);
-            L.push(`- Porteros convocados: ${porteros.length ? porteros.join(', ') : 'NINGUNO'}.`);
-            const bajos = jugadores.filter(j => NIVEL_BAJO.ids.includes(j.p.id) || NIVEL_BAJO.nombres.includes(baseNombre(j.p.name)))
-                .sort((a, b) => a.s.pts - b.s.pts).map(j => j.p.name);
-            L.push(`- Jugadores de nivel más bajo convocados (regla 7), de peor a mejor: ${bajos.length ? bajos.join(', ') : 'ninguno'}.`);
-            if (esMiercoles) {
-                const mex = jugadores.filter(j => MEXICO_IDS.includes(j.p.id)).map(j => j.p.name);
-                L.push(`- Grupo México convocado (regla 5): ${mex.length ? mex.join(', ') : 'ninguno'}.`);
-            }
-            const esp = [];
-            if (jugadores.some(j => j.p.id === IDS.CHARLY)) esp.push('Charly');
-            if (jugadores.some(j => j.p.id === IDS.ZLATAN)) esp.push('Zlatan');
-            if (jugadores.some(j => j.p.id === IDS.ACHRAF)) esp.push('Achraf');
-            if (esp.length) L.push(`- Convocados con regla especial: ${esp.join(', ')}.`);
-            L.push('');
-
-            L.push('REGLAS OBLIGATORIAS');
-            L.push('1. Formación fija 1-2-4-1 en los dos equipos: 1 POR, 2 DEF, 4 MED y 1 DEL.');
-            L.push('2. Charly va SIEMPRE en el Equipo Amarillo.');
-            L.push('3. Zlatan y Achraf NUNCA van en el mismo equipo.');
-            L.push('4. Equilibrio: minimiza la diferencia de puntos totales y equilibra también RES, VEL y TEC. Los 2 más rápidos van en equipos distintos y los 4 más rápidos se reparten 2 y 2. Lo mismo con los más técnicos. Después ajusta el resto para que la diferencia de puntos, RES, VEL y TEC sea la mínima posible.');
-            if (esMiercoles) L.push('5. Es MIÉRCOLES: junta en el mismo equipo al máximo número de miembros del Grupo México convocados, sin romper las reglas 1, 2, 3, 7 y 8. Esta regla va por delante del reparto de los más rápidos y los más técnicos de la regla 4.');
-            else L.push('5. Es LUNES: la regla del Grupo México no se aplica.');
-            L.push('6. Privacidad: en tu respuesta NO muestres estadísticas individuales de ningún jugador. Solo totales o medias de cada equipo.');
-            L.push('7. Nivel más bajo: los jugadores de esa lista se reparten lo más equitativamente posible entre los dos equipos, y los 2 peores de la lista nunca van en el mismo equipo (con 3: 2 en un equipo y 1 en el otro, y el que va solo es uno de los 2 peores).');
-            L.push('8. Posiciones estrictas: cada jugador juega en su pos1. Solo pasa a su pos2 si su pos1 ya está cubierta en su equipo, y a cualquier otra posición solo por fuerza mayor. Un portero juega siempre de portero; si hay 2, uno en cada equipo. Si no hay portero, pon al que menos desequilibre (preferiblemente un defensa) y avísalo. Un delantero juega de DEL. Si coinciden 2 delanteros en un equipo: Sergio pasa a MED en una banda y el otro juega de DEL; Javi alto es delantero puro y juega SIEMPRE de DEL, el otro baja al medio. El equilibrio de la regla 4 se busca dentro de estas posiciones, nunca a costa de ellas.');
-            L.push('Prioridad si hay conflicto: reglas 1, 2, 3, 7 y 8; después la regla 5; y por último el equilibrio de la regla 4.');
-            L.push('');
-
-            L.push('ENTREGA');
-            L.push('1. Equipo Amarillo y Equipo Negro, cada uno con: POR, DEF (2), MED (4, de izquierda a derecha) y DEL.');
-            L.push('2. PUNTOS de cada equipo = suma de los puntos de sus 8 jugadores, con 1 decimal.');
-            L.push('3. Una nota breve de equilibrio: diferencia de puntos, media de RES, VEL y TEC de cada equipo, cómo han quedado repartidos los más rápidos y los más técnicos, y qué jugadores juegan fuera de su pos1 y por qué.');
-            L.push('Antes de responder, comprueba que se cumplen todas las reglas.');
-            return L.join('\n');
-        };
-
+        // Copia al portapapeles con alternativa para móviles antiguos
         const copiarTexto = async (txt) => {
             try { await navigator.clipboard.writeText(txt); return true; } catch (e) {
                 try {
@@ -235,19 +115,16 @@
             const [sortByRank, setSortByRank] = useState(false);
             const [savingStatus, setSavingStatus] = useState('');
 
-            const [diaPartido, setDiaPartido] = useState('Lunes');
-            const [convocatoriaText, setConvocatoriaText] = useState('');
-            const [equiposResult, setEquiposResult] = useState(null);
-            const [cloudOk, setCloudOk] = useState(false);
-            const [resoluciones, setResoluciones] = useState({});
-            const [iaMsg, setIaMsg] = useState('');
-            const [iaFallback, setIaFallback] = useState('');
+            const [statsJson, setStatsJson] = useState('');
+            const [statsEstado, setStatsEstado] = useState('');
+            const [statsHora, setStatsHora] = useState('');
+            const [statsMsg, setStatsMsg] = useState('');
 
             useEffect(() => {
                 async function loadDataFromCloud() {
                     try {
-                        const { data, error } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
-                        if (!error && data && data.datos) { setPlayers(data.datos); setCloudOk(true); }
+                        const { data } = await supabaseClient.from('jugadores').select('datos').eq('id', 1).single();
+                        if (data && data.datos) setPlayers(data.datos);
                     } catch (e) { console.log("Usando plantilla integrada..."); }
                 }
                 loadDataFromCloud();
@@ -301,148 +178,34 @@
                 return list;
             }, [players, search, sortByRank]);
 
-            // Análisis de la lista de WhatsApp: quién es quién
-            const analisis = useMemo(() => {
-                const lineas = convocatoriaText.split('\n').map(limpiarLinea).filter(l => l.length > 0);
-                const vistos = new Set();
-                const items = lineas.map(texto => {
-                    const key = normTxt(texto);
-                    const r = resoluciones[key];
-                    let item;
-                    if (r === '?') {
-                        const res = resolverNombre(texto, players);
-                        const cands = res.player ? [res.player, ...players.filter(x => x.id !== res.player.id && normTxt(x.name).includes(normTxt(texto)))] : res.candidatos;
-                        item = { texto, key, pendiente: true, candidatos: cands };
-                    } else if (r === 'ignorar') item = { texto, key, ignorar: true, manual: true };
-                    else if (r === 'ext') item = { texto, key, ext: true, nombre: texto, manual: true };
-                    else if (r !== undefined && r !== '') {
-                        const p = players.find(x => String(x.id) === String(r));
-                        item = p ? { texto, key, player: p, manual: true } : { texto, key, pendiente: true, candidatos: [] };
-                    } else {
-                        const res = resolverNombre(texto, players);
-                        item = res.player ? { texto, key, player: res.player } : { texto, key, pendiente: true, candidatos: res.candidatos };
-                    }
-                    if (item.player) {
-                        if (vistos.has(item.player.id)) item = { ...item, repetido: true };
-                        else vistos.add(item.player.id);
-                    }
-                    return item;
-                });
-                const validos = items.filter(i => (i.player && !i.repetido) || i.ext);
-                return {
-                    items,
-                    validos,
-                    jugadores: validos.filter(i => i.player).map(i => i.player),
-                    pendientes: items.filter(i => i.pendiente),
-                    total: validos.length
-                };
-            }, [convocatoriaText, players, resoluciones]);
-
-            const resolver = (key, valor) => setResoluciones(prev => ({ ...prev, [key]: valor }));
-
-            const prepararPromptIA = () => {
-                if (!cloudOk) { setIaMsg('No se han cargado los datos actualizados. Recarga la página.'); return null; }
-                if (!analisis.items.length) { setIaMsg('Pega primero la lista de WhatsApp.'); return null; }
-                if (analisis.pendientes.length) { setIaMsg('Indica quién es cada nombre marcado en naranja.'); return null; }
-                return construirPromptIA(diaPartido, analisis.validos);
-            };
-
-            const copiarParaIA = async () => {
-                const txt = prepararPromptIA(); if (!txt) return;
-                const ok = await copiarTexto(txt);
-                if (ok) { setIaFallback(''); setIaMsg('✅ Copiado. Pégalo en ChatGPT, Gemini o Claude.'); }
-                else { setIaFallback(txt); setIaMsg('No se ha podido copiar solo. Mantén pulsado el texto de abajo y cópialo.'); }
-            };
-
-            const compartirConIA = async () => {
-                const txt = prepararPromptIA(); if (!txt) return;
-                try { await navigator.share({ text: txt }); setIaMsg(''); }
-                catch (e) { if (e && e.name !== 'AbortError') copiarParaIA(); }
-            };
-
-            // Organización táctica en 1-2-4-1
-            const organizarFormacion = (listaJugadores) => {
-                let por = null;
-                let defs = [];
-                let mcs = [];
-                let dels = [];
-
-                por = listaJugadores.find(p => p.pos1 === 'Portero' || p.pos2 === 'Portero');
-                if (!por) por = listaJugadores[0];
-
-                let resto = listaJugadores.filter(p => p !== por);
-
-                for (let i = 0; i < resto.length && defs.length < 2; i++) {
-                    if (resto[i].pos1 === 'Defensa' || resto[i].pos2 === 'Defensa') {
-                        defs.push(resto[i]);
-                    }
+            // Consulta REST a Supabase (la misma que usa la IA) y muestra el JSON formateado
+            const obtenerEstadisticas = async () => {
+                setActiveTab('estadisticas');
+                setStatsEstado('cargando');
+                setStatsMsg('');
+                try {
+                    const r = await fetch(`${SUPABASE_URL}/rest/v1/jugadores?select=datos&id=eq.1`, {
+                        headers: { apikey: SUPABASE_ANON_KEY },
+                        cache: 'no-store'
+                    });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const data = await r.json();
+                    setStatsJson(JSON.stringify(data, null, 2));
+                    setStatsHora(new Date().toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
+                    setStatsEstado('ok');
+                } catch (e) {
+                    setStatsEstado('error');
                 }
-                resto = resto.filter(p => !defs.includes(p));
-
-                let del = resto.find(p => p.pos1 === 'Delantero' || p.pos2 === 'Delantero');
-                if (!del) del = resto[0];
-                dels.push(del);
-                resto = resto.filter(p => p !== del);
-
-                mcs = resto;
-
-                while (defs.length < 2 && mcs.length > 0) defs.push(mcs.shift());
-                while (mcs.length < 4 && defs.length > 2) mcs.push(defs.pop());
-
-                return {
-                    portero: por,
-                    defensas: defs.slice(0, 2),
-                    medios: mcs.slice(0, 4),
-                    delantero: dels[0] || mcs.pop()
-                };
             };
 
-            // Generador Inteligente con Mapeador Infalible para WhatsApp
-            const generarEquipos = () => {
-                if (!convocatoriaText.trim()) { alert("Pega la lista de convocados."); return; }
+            const copiarEstadisticas = async () => {
+                const ok = await copiarTexto(statsJson);
+                setStatsMsg(ok ? '✅ Copiado. Pégalo en el chat de la IA.' : 'No se ha podido copiar. Mantén pulsado el texto y cópialo a mano.');
+            };
 
-                if (analisis.pendientes.length) { alert("Indica primero quién es cada nombre marcado en naranja."); return; }
-                let convocados = analisis.jugadores.slice();
-
-                if (convocados.length < 16) {
-                    alert(`Atención: Se han detectado ${convocados.length} jugadores de 16. Revisa los nombres.`);
-                }
-
-                let charly = convocados.find(p => p.id === IDS.CHARLY) || convocados[0];
-                let zlatan = convocados.find(p => p.id === IDS.ZLATAN);
-                let achraf = convocados.find(p => p.id === IDS.ACHRAF);
-
-                let resto = convocados.filter(p => p !== charly);
-                resto.sort((a, b) => calcGlobalAvg(b.scores) - calcGlobalAvg(a.scores));
-
-                let amarillo = [charly];
-                let negro = [];
-
-                resto.forEach(p => {
-                    if (p === zlatan) {
-                        if (amarillo.includes(achraf)) negro.push(p); else amarillo.push(p);
-                    } else if (p === achraf) {
-                        if (amarillo.includes(zlatan)) negro.push(p); else amarillo.push(p);
-                    } else if (diaPartido === 'Miercoles' && MEXICO_IDS.includes(p.id)) {
-                        if (amarillo.length < 8) amarillo.push(p); else negro.push(p);
-                    } else {
-                        const ptsAmarilloActual = amarillo.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
-                        const ptsNegroActual = negro.reduce((acc, curr) => acc + calcGlobalAvg(curr.scores), 0);
-                        if (amarillo.length < 8 && (ptsAmarilloActual <= ptsNegroActual || negro.length >= 8)) amarillo.push(p);
-                        else if (negro.length < 8) negro.push(p);
-                        else amarillo.push(p);
-                    }
-                });
-
-                const ptsAmarillo = amarillo.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
-                const ptsNegro = negro.reduce((acc, p) => acc + (calcGlobalAvg(p.scores) * 8), 0).toFixed(1);
-
-                setEquiposResult({
-                    negro: organizarFormacion(negro),
-                    amarillo: organizarFormacion(amarillo),
-                    ptsAmarillo,
-                    ptsNegro
-                });
+            const compartirEstadisticas = async () => {
+                try { await navigator.share({ text: statsJson }); }
+                catch (e) { if (e && e.name !== 'AbortError') copiarEstadisticas(); }
             };
 
             return (
@@ -466,8 +229,8 @@
                                 <button onClick={() => setActiveTab('scouting')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'scouting' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>
                                     <i className="fa-solid fa-users-viewfinder mr-2"></i>Scouting & Valoraciones
                                 </button>
-                                <button onClick={() => setActiveTab('generador')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'generador' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>
-                                    <i className="fa-solid fa-diagram-project mr-2"></i>Generar Equipos
+                                <button onClick={obtenerEstadisticas} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'estadisticas' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}>
+                                    <i className="fa-solid fa-chart-column mr-2"></i>Obtener estadísticas
                                 </button>
                             </div>
                         </header>
@@ -564,196 +327,40 @@
                             </>
                         )}
 
-                        {/* PESTAÑA 2: GENERADOR DE EQUIPOS CON CAMPO DINÁMICO 1-2-4-1 */}
-                        {activeTab === 'generador' && (
-                            <div className="space-y-6">
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-                                    <h2 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-list-check"></i>Convocatoria del Día (16 Jugadores)
-                                    </h2>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 mb-2">Día del partido:</label>
-                                            <select value={diaPartido} onChange={e => setDiaPartido(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm font-semibold text-slate-200">
-                                                <option value="Lunes">Lunes</option>
-                                                <option value="Miercoles">Miércoles (Priorizar Grupo México)</option>
-                                            </select>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="block text-xs font-bold text-slate-400 mb-2">Pega la lista de WhatsApp:</label>
-                                            <textarea rows="4" value={convocatoriaText} onChange={e => setConvocatoriaText(e.target.value)} placeholder="1. Sergio A.&#10;2. Javi alto&#10;3. Nacho..." className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 font-mono"></textarea>
-                                        </div>
+                        {/* PESTAÑA 2: ESTADÍSTICAS EN JSON PARA LA IA */}
+                        {activeTab === 'estadisticas' && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6 shadow-2xl">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-amber-400 flex items-center gap-2">
+                                            <i className="fa-solid fa-chart-column"></i>Estadísticas actualizadas
+                                        </h2>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            {statsEstado === 'ok' && `Datos obtenidos el ${statsHora}. Cópialos y pégalos en el chat de la IA.`}
+                                            {statsEstado === 'cargando' && 'Consultando Supabase…'}
+                                            {statsEstado === 'error' && 'No se han podido obtener los datos. Revisa la conexión y vuelve a intentarlo.'}
+                                        </p>
                                     </div>
-
-                                    {analisis.items.length > 0 && (
-                                        <div className="mb-4 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
-                                            <div className="flex justify-between items-center mb-3">
-                                                <span className="text-xs font-bold text-slate-400">Jugadores identificados</span>
-                                                <span className={`text-sm font-black ${analisis.total === 16 && !analisis.pendientes.length ? 'text-emerald-400' : 'text-amber-400'}`}>{analisis.total}/16</span>
-                                            </div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {analisis.items.filter(i => !i.pendiente).map((i, idx) => (
-                                                    <button key={idx} type="button" onClick={() => resolver(i.key, '?')}
-                                                        title="Toca para corregir"
-                                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${i.repetido ? 'border-rose-700 text-rose-300 line-through' : i.ignorar ? 'border-slate-700 text-slate-500 line-through' : i.ext ? 'border-rose-600 text-rose-300' : 'border-emerald-700/60 text-emerald-300'}`}>
-                                                        {i.ext ? `EXT: ${i.nombre}` : i.ignorar ? i.texto : i.player.name}
-                                                        {i.player && ![normTxt(i.player.name), baseNombre(i.player.name), parentesis(i.player.name)].includes(normTxt(i.texto)) && !i.repetido && <span className="text-slate-500 font-medium"> ({i.texto})</span>}
-                                                        {i.repetido && <span className="font-medium"> repetido</span>}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {analisis.pendientes.map((i, idx) => (
-                                                <div key={idx} className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
-                                                    <span className="text-xs font-bold text-amber-400 sm:w-40 truncate">¿Quién es «{i.texto}»?</span>
-                                                    <select value="" onChange={e => resolver(i.key, e.target.value)} className="flex-1 bg-slate-800 border border-amber-600/60 rounded-lg p-2 text-sm text-slate-200">
-                                                        <option value="">Elige una opción…</option>
-                                                        {i.candidatos.length > 0 && (
-                                                            <optgroup label="Posibles">
-                                                                {i.candidatos.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                                            </optgroup>
-                                                        )}
-                                                        <option value="ext">Es un externo (EXT)</option>
-                                                        <option value="ignorar">No es un jugador (ignorar línea)</option>
-                                                        <optgroup label="Todos los jugadores">
-                                                            {[...players].sort((a, b) => a.name.localeCompare(b.name)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                                        </optgroup>
-                                                    </select>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <button onClick={generarEquipos} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 uppercase tracking-wider text-sm">
-                                        🚀 Calcular y Generar Alineación en el Campo
+                                    <button onClick={obtenerEstadisticas} className="px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700">
+                                        <i className="fa-solid fa-rotate mr-2"></i>Actualizar
                                     </button>
-
-                                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <button onClick={copiarParaIA} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
-                                            📋 Copiar para la IA
-                                        </button>
-                                        {typeof navigator !== 'undefined' && navigator.share && (
-                                            <button onClick={compartirConIA} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
-                                                📤 Enviar a ChatGPT / Gemini
-                                            </button>
-                                        )}
-                                    </div>
-                                    <p className="mt-2 text-xs text-slate-500">Copia las reglas y los datos actualizados de los convocados para pegarlos en ChatGPT, Gemini o Claude. La IA no necesita consultar nada.</p>
-                                    {!cloudOk && <p className="mt-2 text-xs font-bold text-rose-400">Cargando datos de Supabase… Si no cambia, recarga la página.</p>}
-                                    {iaMsg && <p className="mt-2 text-sm font-bold text-amber-300">{iaMsg}</p>}
-                                    {iaFallback && (
-                                        <textarea readOnly rows="8" value={iaFallback} onFocus={e => e.target.select()} className="mt-2 w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono"></textarea>
-                                    )}
                                 </div>
 
-                                {/* CAMPO DE FÚTBOL TÁCTICO */}
-                                {equiposResult && (
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6 items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
-                                            <div className="bg-slate-900 p-3 rounded-lg border-l-4 border-sky-400 text-center">
-                                                <div className="text-xs font-bold text-slate-400">EQUIPO NEGRO</div>
-                                                <div className="text-lg font-black text-sky-400">PUNTOS: {equiposResult.ptsNegro}</div>
-                                            </div>
-                                            <div className="text-center hidden md:block">
-                                                <div className="text-xs font-bold text-amber-400 uppercase">{diaPartido} - CAMPO 2 PERALES</div>
-                                                <div className="text-xs text-slate-500">FORMACIÓN 1-2-4-1</div>
-                                            </div>
-                                            <div className="bg-slate-900 p-3 rounded-lg border-l-4 border-amber-400 text-center">
-                                                <div className="text-xs font-bold text-slate-400">EQUIPO AMARILLO</div>
-                                                <div className="text-lg font-black text-amber-400">PUNTOS: {equiposResult.ptsAmarillo}</div>
-                                            </div>
+                                {statsEstado === 'ok' && (
+                                    <>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                            <button onClick={copiarEstadisticas} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 uppercase tracking-wider text-sm">
+                                                📋 Copiar JSON
+                                            </button>
+                                            {typeof navigator !== 'undefined' && navigator.share && (
+                                                <button onClick={compartirEstadisticas} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
+                                                    📤 Enviar a la IA
+                                                </button>
+                                            )}
                                         </div>
-
-                                        <div className="football-pitch rounded-2xl p-6 min-h-[550px] flex flex-col justify-between">
-                                            <div className="pitch-lines"></div>
-
-                                            {/* EQUIPO NEGRO */}
-                                            <div className="relative z-10">
-                                                <div className="text-xs font-black text-sky-300 uppercase mb-2 tracking-widest text-center md:text-left">▶ Ataque Equipo Negro (1-2-4-1)</div>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.portero?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.defensas[0]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.defensas[1]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[0]?.name}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[1]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[2]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.medios[3]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-sky-400/50 rounded-lg p-2 shadow-lg bg-sky-950/80">
-                                                        <div className="text-[10px] text-sky-300 font-bold">DELANTERO</div>
-                                                        <div className="text-xs font-extrabold text-white truncate">{equiposResult.negro.delantero?.name}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="my-4 border-t-2 border-white/30 relative">
-                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white/30 rounded-full"></div>
-                                            </div>
-
-                                            {/* EQUIPO AMARILLO */}
-                                            <div className="relative z-10">
-                                                <div className="text-xs font-black text-amber-300 uppercase mb-2 tracking-widest text-center md:text-left">◀ Ataque Equipo Amarillo (1-2-4-1)</div>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">PORTERO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.portero?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.defensas[0]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">DEFENSA</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.defensas[1]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[0]?.name}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mt-3">
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[1]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[2]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg">
-                                                        <div className="text-[10px] text-slate-400 font-bold">MEDIO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.medios[3]?.name}</div>
-                                                    </div>
-                                                    <div className="bg-slate-900/90 border border-amber-400/50 rounded-lg p-2 shadow-lg bg-amber-950/80">
-                                                        <div className="text-[10px] text-amber-300 font-bold">DELANTERO</div>
-                                                        <div className="text-xs font-extrabold text-amber-200 truncate">{equiposResult.amarillo.delantero?.name}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        {statsMsg && <p className="mb-3 text-sm font-bold text-amber-300">{statsMsg}</p>}
+                                        <pre className="max-h-[60vh] overflow-auto bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] leading-relaxed text-emerald-300 font-mono whitespace-pre select-all">{statsJson}</pre>
+                                    </>
                                 )}
                             </div>
                         )}
