@@ -6,7 +6,7 @@ create extension if not exists pg_net with schema extensions;
 
 -- 2. Guardar el token de GitHub en el almacén cifrado (Vault).
 --    Sustituye PEGA_AQUI_EL_TOKEN por tu token. Ejecuta esta línea solo una vez.
-select vault.create_secret('PEGA_AQUI_EL_TOKEN', 'github_token_fut7');
+select vault.create_secret('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', 'github_token_fut7');
 
 -- 3. Función que avisa a GitHub solo si los datos han cambiado
 create or replace function public.avisar_github_datos()
