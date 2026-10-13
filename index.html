@@ -94,6 +94,9 @@
             { id: 25, name: "Asensio", pos1: "Delantero", pos2: "Delantero", scores: { Agus: {r:7, v:7, t:7}, Tora: {r:6, v:6, t:6}, Lino: {r:6, v:6, t:6}, Reta: {r:7, v:7, t:7}, Neft: {r:6, v:6, t:6} } }
         ];
 
+        // URL pública del JSON (se regenera al cambiar las estadísticas: aviso de Supabase + .github/workflows/exportar-datos.yml)
+        const URL_JSON_PUBLICO = "https://raw.githubusercontent.com/cimorales/fut7-puntuaciones/main/datos.json";
+
         // Copia al portapapeles con alternativa para móviles antiguos
         const copiarTexto = async (txt) => {
             try { await navigator.clipboard.writeText(txt); return true; } catch (e) {
@@ -203,9 +206,34 @@
                 setStatsMsg(ok ? '✅ Copiado. Pégalo en el chat de la IA.' : 'No se ha podido copiar. Mantén pulsado el texto y cópialo a mano.');
             };
 
-            const compartirEstadisticas = async () => {
-                try { await navigator.share({ text: statsJson }); }
-                catch (e) { if (e && e.name !== 'AbortError') copiarEstadisticas(); }
+            const nombreArchivo = () => `fut7-estadisticas-${new Date().toISOString().slice(0, 10)}.json`;
+
+            const descargarEstadisticas = () => {
+                const blob = new Blob([statsJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = nombreArchivo();
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                setStatsMsg('✅ Archivo descargado. Adjúntalo en el chat de la IA.');
+            };
+
+            const puedeCompartirArchivo = (() => {
+                try {
+                    return typeof navigator !== 'undefined' && navigator.canShare &&
+                        navigator.canShare({ files: [new File(['{}'], 'x.json', { type: 'application/json' })] });
+                } catch (e) { return false; }
+            })();
+
+            const compartirArchivo = async () => {
+                const file = new File([statsJson], nombreArchivo(), { type: 'application/json' });
+                try { await navigator.share({ files: [file], title: 'Estadísticas Fut7' }); }
+                catch (e) { if (e && e.name !== 'AbortError') descargarEstadisticas(); }
+            };
+
+            const copiarUrl = async () => {
+                const ok = await copiarTexto(URL_JSON_PUBLICO);
+                setStatsMsg(ok ? '✅ URL copiada.' : 'No se ha podido copiar la URL.');
             };
 
             return (
@@ -348,15 +376,25 @@
 
                                 {statsEstado === 'ok' && (
                                     <>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                                             <button onClick={copiarEstadisticas} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black rounded-xl shadow-lg hover:from-amber-400 hover:to-amber-500 uppercase tracking-wider text-sm">
                                                 📋 Copiar JSON
                                             </button>
-                                            {typeof navigator !== 'undefined' && navigator.share && (
-                                                <button onClick={compartirEstadisticas} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
-                                                    📤 Enviar a la IA
+                                            <button onClick={descargarEstadisticas} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
+                                                ⬇️ Descargar .json
+                                            </button>
+                                            {puedeCompartirArchivo && (
+                                                <button onClick={compartirArchivo} className="w-full py-3.5 bg-slate-800 border border-slate-600 text-slate-100 font-black rounded-xl hover:bg-slate-700 uppercase tracking-wider text-sm">
+                                                    📤 Enviar archivo a la IA
                                                 </button>
                                             )}
+                                        </div>
+                                        <div className="mb-3 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+                                            <div className="text-xs font-bold text-slate-400 mb-2">URL directa del JSON (se actualiza sola al cambiar las estadísticas):</div>
+                                            <div className="flex gap-2">
+                                                <input readOnly value={URL_JSON_PUBLICO} onFocus={e => e.target.select()} className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono" />
+                                                <button onClick={copiarUrl} className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700">Copiar</button>
+                                            </div>
                                         </div>
                                         {statsMsg && <p className="mb-3 text-sm font-bold text-amber-300">{statsMsg}</p>}
                                         <pre className="max-h-[60vh] overflow-auto bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] leading-relaxed text-emerald-300 font-mono whitespace-pre select-all">{statsJson}</pre>
