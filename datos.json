@@ -1290,7 +1290,7 @@
       },
       {
         "id": 40,
-        "name": "Externo 5",
+        "name": "Antonio (Baena)",
         "pos1": "Medio",
         "pos2": "Defensa",
         "scores": {
@@ -1300,9 +1300,9 @@
             "v": 6
           },
           "Lino": {
-            "r": 6,
-            "t": 6,
-            "v": 6
+            "r": 8,
+            "t": 7,
+            "v": 7
           },
           "Neft": {
             "r": 6,
